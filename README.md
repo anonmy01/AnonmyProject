@@ -1,16 +1,16 @@
-#⚡ AnonmyHub
+# ⚡ AnonmyHub
 O Hub definitivo e centralizado para automação de jogos no Roblox.
 StatusLanguageUI
 
-#🌐 Comunidade
+# 🌐 Comunidade
 Tem dúvidas, quer sugerir novos jogos ou reportar um bug? Junte-se à nossa comunidade no Discord!
 
 [Discord](https://discord.gg/wExE7ujcz)
 
-#📋 Sobre o Projeto
+# 📋 Sobre o Projeto
 O AnonmyHub é um projeto de script hub focado em performance, automação inteligente e design limpo. Desenvolvido utilizando a biblioteca Rayfield UI, o hub centraliza os melhores scripts para diversos jogos do Roblox em um único lugar.
 
-#✨ Jogos e Funcionalidades
+# ✨ Jogos e Funcionalidades
 
 🗡️ Saber Simulator
 Farming: Auto Swing, Auto Sell, Auto Collect Coins.
