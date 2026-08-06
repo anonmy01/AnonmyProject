@@ -18,13 +18,28 @@ O AnonmyHub é um projeto de script hub focado em performance, automação intel
 
 # ✨ Jogos e Funcionalidades
 
-🗡️ Saber Simulator
+<details>
+  <summary><b>🗡️ Saber Simulator</b></summary>
+  
+  ```lua
+  loadstring(game:HttpGet("https://raw.githubusercontent.com/anonmy01/AnonmyProject/refs/heads/main/SaberSimulator.lua"))()
+  ```
+</details>
+
 Farming: Auto Swing, Auto Sell, Auto Collect Coins.
 Lojas: Auto Buy Weapons, Auto Buy DNAs, Auto Buy Auras, Auto Buy Pet Auras.
 Pets & Classes: Auto Equip Best Pets, Auto Buy Next Class (Loop de Prestige Automático), Auto Equip Best Class.
 KOTH: Captura automática de todas as Flags do mapa para farm de Coroas.
 
-🎯 Sniper Arena
+
+<details>
+  <summary><b>🎯 Sniper Arena</b></summary>
+  
+  ```lua
+  loadstring(game:HttpGet("https://raw.githubusercontent.com/anonmy01/AnonmyProject/refs/heads/main/SniperArena.lua"))()
+  ```
+</details>
+
 Silent Aim: Mirá automática com FOV ajustável e prioridade de Headshot.
 Wallbang (Beta): Tentativa de ignorar colisões de parede (depende da validação do servidor).
 Segurança: Hooks isolados para não causar crash no executor.
@@ -34,3 +49,16 @@ Segurança: Hooks isolados para não causar crash no executor.
 Lua / Luau: Linguagem de programação principal.
 Rayfield UI: Biblioteca de interface gráfica.
 Cobalt Spy / Hydroxide: Ferramentas de análise de rede usadas para mapear os RemoteEvents de cada jogo.
+
+
+
+
+<details>
+  <summary><b>🎯 Sniper Arena</b></summary>
+  
+  ```lua
+  loadstring(game:HttpGet("https://raw.githubusercontent.com/anonmy01/AnonmyProject/refs/heads/main/SniperArena.lua"))()
+  ```
+</details>
+
+
