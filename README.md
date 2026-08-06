@@ -49,16 +49,3 @@ Segurança: Hooks isolados para não causar crash no executor.
 Lua / Luau: Linguagem de programação principal.
 Rayfield UI: Biblioteca de interface gráfica.
 Cobalt Spy / Hydroxide: Ferramentas de análise de rede usadas para mapear os RemoteEvents de cada jogo.
-
-
-
-
-<details>
-  <summary><b>🎯 Sniper Arena</b></summary>
-  
-  ```lua
-  loadstring(game:HttpGet("https://raw.githubusercontent.com/anonmy01/AnonmyProject/refs/heads/main/SniperArena.lua"))()
-  ```
-</details>
-
-
