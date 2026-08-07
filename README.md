@@ -40,9 +40,10 @@ KOTH: Captura automática de todas as Flags do mapa para farm de Coroas.
   ```
 </details>
 
-Silent Aim: Mirá automática com FOV ajustável e prioridade de Headshot.
-Wallbang (Beta): Tentativa de ignorar colisões de parede (depende da validação do servidor).
-Segurança: Hooks isolados para não causar crash no executor.
+Silent Aim + Headshot Mode (Mira automática na cabeça).
+Hitbox Expander (Aumenta o tamanho da cabeça dos inimigos para não errar o tiro).
+Chams (Highlight vermelho para ver todo mundo através das paredes).
+WalkSpeed (Ajuste de velocidade).
 
 
 # 🛠️ Tecnologias Utilizadas
