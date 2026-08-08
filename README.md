@@ -50,7 +50,6 @@ loadstring(game:HttpGet("https://raw.githubusercontent.com/anonmy01/AnonmyProjec
 
 #### 🎯 Combat
 - Silent Aim + Headshot Mode (Auto-aim to the head)
-- Hitbox Expander (Increases enemy head size so you never miss a shot)
 
 #### 👁️ Visuals
 - Chams (Red highlight to see everyone through walls)
