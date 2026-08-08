@@ -1,21 +1,21 @@
 # ⚡ AnonmyHub
 
-![Status](https://img.shields.io/badge/Status-Ativo-success?style=for-the-badge)
+![Status](https://img.shields.io/badge/Status-Active-success?style=for-the-badge)
 ![Language](https://img.shields.io/badge/Language-Lua-blue?style=for-the-badge)
 ![UI](https://img.shields.io/badge/UI-Rayfield/Native-blueviolet?style=for-the-badge)
 
-**O Hub definitivo e centralizado para automação de jogos no Roblox.**
+**The ultimate and centralized hub for Roblox game automation.**
 
 [![Discord](https://img.shields.io/badge/Discord-Anonmy%20Project-7289DA?style=for-the-badge&logo=discord&logoColor=white)](https://discord.gg/wExE7ujcz)
 
 ---
 
-## 📋 Sobre o Projeto
-O **AnonmyHub** é um projeto de script hub focado em performance, automação inteligente e design limpo. Desenvolvido utilizando a biblioteca [Rayfield UI](https://sirius.menu/rayfield) e interfaces nativas, o hub centraliza os melhores scripts para diversos jogos do Roblox em um único lugar.
+## 📋 About the Project
+**AnonmyHub** is a script hub project focused on performance, smart automation, and clean design. Developed using the [Rayfield UI](https://sirius.menu/rayfield) library and native interfaces, the hub centralizes the best scripts for various Roblox games in one place.
 
 ---
 
-## ✨ Jogos e Funcionalidades
+## ✨ Games & Features
 
 <details>
 <summary><b>🗡️ Saber Simulator</b></summary>
@@ -25,7 +25,7 @@ O **AnonmyHub** é um projeto de script hub focado em performance, automação i
 - Auto Sell Strength
 - Auto Collect Coins
 
-#### 🛒 Lojas
+#### 🛒 Shops
 - Auto Buy Weapons
 - Auto Buy DNAs
 - Auto Buy Auras
@@ -33,11 +33,11 @@ O **AnonmyHub** é um projeto de script hub focado em performance, automação i
 
 #### 🐾 Pets & Classes
 - Auto Equip Best Pets
-- Auto Buy Next Class (Loop de Prestige Automático)
+- Auto Buy Next Class (Auto Prestige Loop)
 - Auto Equip Best Class
 
 #### 🚩 KOTH
-- Captura automática de todas as Flags do mapa para farm de Coroas
+- Auto capture all map Flags for Crown farming
 
 ##### 🔗 Loadstring:
 ```lua
@@ -49,14 +49,14 @@ loadstring(game:HttpGet("https://raw.githubusercontent.com/anonmy01/AnonmyProjec
 <summary><b>🎯 Sniper Arena</b></summary>
 
 #### 🎯 Combat
-- Silent Aim + Headshot Mode (Mira automática na cabeça)
-- Hitbox Expander (Aumenta o tamanho da cabeça dos inimigos para não errar o tiro)
+- Silent Aim + Headshot Mode (Auto-aim to the head)
+- Hitbox Expander (Increases enemy head size so you never miss a shot)
 
 #### 👁️ Visuals
-- Chams (Highlight vermelho para ver todo mundo através das paredes)
+- Chams (Red highlight to see everyone through walls)
 
 #### 🏃 Player
-- WalkSpeed (Ajuste de velocidade)
+- WalkSpeed (Speed adjustment)
 
 ##### 🔗 Loadstring:
 ```lua
@@ -66,8 +66,8 @@ loadstring(game:HttpGet("https://raw.githubusercontent.com/anonmy01/AnonmyProjec
 
 ---
 
-## 🛠️ Tecnologias Utilizadas
+## 🛠️ Technologies Used
 
-- **Lua / Luau:** Linguagem de programação principal.
-- **Rayfield UI / Native UI:** Bibliotecas de interface gráfica.
-- **Cobalt Spy / Hydroxide:** Ferramentas de análise de rede usadas para mapear os `RemoteEvents` de cada jogo.
+- **Lua / Luau:** Main programming language.
+- **Rayfield UI / Native UI:** GUI libraries.
+- **Cobalt Spy / Hydroxide:** Network analysis tools used to map out `RemoteEvents` for each game.
