@@ -1,4 +1,4 @@
--- AnonmyHub | SNIPER ARENA (UI Clássica + Hitbox + Chams)
+
 task.spawn(function()
     local Players = game:GetService("Players")
     local RunService = game:GetService("RunService")
@@ -12,21 +12,17 @@ task.spawn(function()
     end)
 
     local AimbotConfig = { Enabled = false, FOVRadius = 180, HeadshotMode = true }
-    local hitboxEnabled = false
-    local hitboxSize = 5
     local chamsEnabled = false
 
-    ---------------------------------------------------------
-    -- 1. CRIAR A INTERFACE (Estilo Clássico)
-    ---------------------------------------------------------
+
     local ScreenGui = Instance.new("ScreenGui")
     ScreenGui.Name = "AnonmyHubSniper"
     local okUI = pcall(function() ScreenGui.Parent = game:GetService("CoreGui") end)
     if not okUI then ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui") end
 
     local MainFrame = Instance.new("Frame")
-    MainFrame.Size = UDim2.new(0, 250, 0, 370) -- Aumentei a altura para caber os novos botões
-    MainFrame.Position = UDim2.new(0.5, -125, 0.5, -185)
+    MainFrame.Size = UDim2.new(0, 250, 0, 290) -- Altura ajustada (removido o hitbox)
+    MainFrame.Position = UDim2.new(0.5, -125, 0.5, -145)
     MainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
     MainFrame.BorderSizePixel = 0
     MainFrame.Active = true
@@ -42,7 +38,7 @@ task.spawn(function()
     Title.TextSize = 16
     Title.Parent = MainFrame
 
-    -- Botão Silent Aim
+
     local SilentBtn = Instance.new("TextButton")
     SilentBtn.Size = UDim2.new(1, -20, 0, 30)
     SilentBtn.Position = UDim2.new(0, 10, 0, 40)
@@ -58,7 +54,7 @@ task.spawn(function()
         SilentBtn.BackgroundColor3 = AimbotConfig.Enabled and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(50, 50, 50)
     end)
 
-    -- Botão Headshot
+
     local HeadshotBtn = Instance.new("TextButton")
     HeadshotBtn.Size = UDim2.new(1, -20, 0, 30)
     HeadshotBtn.Position = UDim2.new(0, 10, 0, 80)
@@ -74,7 +70,7 @@ task.spawn(function()
         HeadshotBtn.BackgroundColor3 = AimbotConfig.HeadshotMode and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(50, 50, 50)
     end)
 
-    -- FOV
+
     local FovLabel = Instance.new("TextLabel")
     FovLabel.Size = UDim2.new(0.5, -10, 0, 30)
     FovLabel.Position = UDim2.new(0, 10, 0, 120)
@@ -100,52 +96,10 @@ task.spawn(function()
         if val then AimbotConfig.FOVRadius = val end
     end)
 
-    -- Hitbox Expander
-    local HitboxBtn = Instance.new("TextButton")
-    HitboxBtn.Size = UDim2.new(1, -20, 0, 30)
-    HitboxBtn.Position = UDim2.new(0, 10, 0, 160)
-    HitboxBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-    HitboxBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    HitboxBtn.Text = "Hitbox Expander: OFF"
-    HitboxBtn.Font = Enum.Font.SourceSans
-    HitboxBtn.TextSize = 14
-    HitboxBtn.Parent = MainFrame
 
-    local HitboxSizeLabel = Instance.new("TextLabel")
-    HitboxSizeLabel.Size = UDim2.new(0.5, -10, 0, 30)
-    HitboxSizeLabel.Position = UDim2.new(0, 10, 0, 200)
-    HitboxSizeLabel.BackgroundTransparency = 1
-    HitboxSizeLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
-    HitboxSizeLabel.Text = "Tam. Hitbox:"
-    HitboxSizeLabel.Font = Enum.Font.SourceSans
-    HitboxSizeLabel.TextSize = 14
-    HitboxSizeLabel.TextXAlignment = Enum.TextXAlignment.Left
-    HitboxSizeLabel.Parent = MainFrame
-
-    local HitboxSizeBox = Instance.new("TextBox")
-    HitboxSizeBox.Size = UDim2.new(0.5, -10, 0, 30)
-    HitboxSizeBox.Position = UDim2.new(0.5, 0, 0, 200)
-    HitboxSizeBox.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-    HitboxSizeBox.TextColor3 = Color3.fromRGB(255, 255, 255)
-    HitboxSizeBox.Text = "5"
-    HitboxSizeBox.Font = Enum.Font.SourceSans
-    HitboxSizeBox.TextSize = 14
-    HitboxSizeBox.Parent = MainFrame
-    HitboxSizeBox.FocusLost:Connect(function()
-        local val = tonumber(HitboxSizeBox.Text)
-        if val then hitboxSize = val end
-    end)
-
-    HitboxBtn.MouseButton1Click:Connect(function()
-        hitboxEnabled = not hitboxEnabled
-        HitboxBtn.Text = "Hitbox Expander: " .. (hitboxEnabled and "ON" or "OFF")
-        HitboxBtn.BackgroundColor3 = hitboxEnabled and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(50, 50, 50)
-    end)
-
-    -- Chams
     local ChamsBtn = Instance.new("TextButton")
     ChamsBtn.Size = UDim2.new(1, -20, 0, 30)
-    ChamsBtn.Position = UDim2.new(0, 10, 0, 240)
+    ChamsBtn.Position = UDim2.new(0, 10, 0, 160) -- Posição ajustada
     ChamsBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
     ChamsBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
     ChamsBtn.Text = "Chams (Paredes): OFF"
@@ -158,10 +112,10 @@ task.spawn(function()
         ChamsBtn.BackgroundColor3 = chamsEnabled and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(50, 50, 50)
     end)
 
-    -- WalkSpeed
+
     local WsLabel = Instance.new("TextLabel")
     WsLabel.Size = UDim2.new(0.5, -10, 0, 30)
-    WsLabel.Position = UDim2.new(0, 10, 0, 280)
+    WsLabel.Position = UDim2.new(0, 10, 0, 200) -- Posição ajustada
     WsLabel.BackgroundTransparency = 1
     WsLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
     WsLabel.Text = "WalkSpeed:"
@@ -172,7 +126,7 @@ task.spawn(function()
 
     local WsBox = Instance.new("TextBox")
     WsBox.Size = UDim2.new(0.5, -10, 0, 30)
-    WsBox.Position = UDim2.new(0.5, 0, 0, 280)
+    WsBox.Position = UDim2.new(0.5, 0, 0, 200) -- Posição ajustada
     WsBox.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
     WsBox.TextColor3 = Color3.fromRGB(255, 255, 255)
     WsBox.Text = "16"
@@ -184,10 +138,10 @@ task.spawn(function()
         if val then local c = LocalPlayer.Character if c and c:FindFirstChild("Humanoid") then c.Humanoid.WalkSpeed = val end end
     end)
 
-    -- Fechar
+
     local CloseBtn = Instance.new("TextButton")
     CloseBtn.Size = UDim2.new(1, -20, 0, 30)
-    CloseBtn.Position = UDim2.new(0, 10, 0, 320)
+    CloseBtn.Position = UDim2.new(0, 10, 0, 240) -- Posição ajustada
     CloseBtn.BackgroundColor3 = Color3.fromRGB(150, 0, 0)
     CloseBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
     CloseBtn.Text = "Fechar Script"
@@ -200,9 +154,7 @@ task.spawn(function()
 
     print("Interface do AnonmyHub carregada com sucesso!")
 
-    ---------------------------------------------------------
-    -- 2. SILENT AIM
-    ---------------------------------------------------------
+
     local ok1, EntityService = pcall(function() return require(ReplicatedStorage:WaitForChild("Remote", 5):WaitForChild("EntityService", 5)) end)
     local ok2, ClientShootableComponent = pcall(function() return require(ReplicatedStorage:WaitForChild("Client", 5):WaitForChild("CombatController", 5):WaitForChild("ClientComponent", 5):WaitForChild("ClientShootableComponent", 5)) end)
 
@@ -305,41 +257,23 @@ task.spawn(function()
         end)
     end
 
-    ---------------------------------------------------------
-    -- 3. HITBOX & CHAMS LOGIC
-    ---------------------------------------------------------
-    local originalSizes = {}
+
     local highlights = {}
 
-    local function ApplyHitboxAndChams()
+    local function ApplyChams()
         for _, plr in ipairs(Players:GetPlayers()) do
             if plr ~= LocalPlayer then
                 local char = plr.Character
                 if char then
-                    for _, partName in ipairs({"Head", "HumanoidRootPart"}) do
-                        local part = char:FindFirstChild(partName)
-                        if part and part:IsA("BasePart") then
-                            if hitboxEnabled then
-                                if not originalSizes[part] then originalSizes[part] = part.Size end
-                                part.Size = Vector3.new(hitboxSize, hitboxSize, hitboxSize)
-                                part.Transparency = 1
-                                part.CanCollide = false
-                            else
-                                if originalSizes[part] then
-                                    part.Size = originalSizes[part]
-                                    originalSizes[part] = nil
-                                end
-                                if partName == "Head" then part.Transparency = 0 else part.Transparency = 1 end
-                            end
-                        end
-                    end
                     if chamsEnabled then
                         if not highlights[char] then
-                            local hl = Instance.new("Highlight", char)
+                            local hl = Instance.new("Highlight")
                             hl.FillColor = Color3.fromRGB(255, 0, 0)
                             hl.OutlineColor = Color3.fromRGB(255, 255, 255)
                             hl.FillTransparency = 0.5
                             hl.OutlineTransparency = 0
+                            hl.Adornee = char
+                            hl.Parent = char
                             highlights[char] = hl
                         end
                     else
@@ -355,7 +289,7 @@ task.spawn(function()
 
     task.spawn(function()
         while task.wait(0.5) do
-            if hitboxEnabled or chamsEnabled then ApplyHitboxAndChams() end
+            if chamsEnabled then ApplyChams() end
         end
     end)
 end)
