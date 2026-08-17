@@ -1,4 +1,4 @@
--- AnonmyUI V13 (Toggle Fix e Ordem das Abas)
+-- AnonmyUI V14 (Lógica de Toggle Reescrita e Limpa)
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
@@ -113,11 +113,10 @@ function AnonmyUI:CreateWindow(config)
     TweenService:Create(Main, TweenInfo.new(0.6, Enum.EasingStyle.Exponential, Enum.EasingDirection.Out), {Size = UDim2.new(0, 500, 0, 350)}):Play()
     TweenService:Create(Shadow, TweenInfo.new(0.6, Enum.EasingStyle.Exponential, Enum.EasingDirection.Out), {ImageTransparency = 0.5}):Play()
 
-    -- TabContainer agora tem SortOrder = LayoutOrder para garantir a posição
     local TabContainer = Create("ScrollingFrame", { Size = UDim2.new(0, 140, 1, -50), Position = UDim2.new(0, 10, 0, 45), BackgroundColor3 = Theme.Topbar, BorderSizePixel = 0, Parent = Main, ScrollBarThickness = 0, AutomaticCanvasSize = Enum.AutomaticSize.Y, ZIndex = 2 })
     Create("UICorner", { CornerRadius = UDim.new(0, 8), Parent = TabContainer })
     local tabListLayout = CreateListLayout(TabContainer, 5)
-    tabListLayout.SortOrder = Enum.SortOrder.LayoutOrder -- Força a usar a ordem que definirmos
+    tabListLayout.SortOrder = Enum.SortOrder.LayoutOrder
     CreatePadding(TabContainer, 0, 0, 5, 0)
 
     local ContentContainer = Create("Frame", { Size = UDim2.new(1, -160, 1, -50), Position = UDim2.new(0, 150, 0, 45), BackgroundTransparency = 1, Parent = Main, ZIndex = 2, ClipsDescendants = true })
@@ -148,7 +147,6 @@ function AnonmyUI:CreateWindow(config)
         end
     end
 
-    -- Adicionado parâmetro "order" para definir a posição da aba
     function WindowAPI:CreateTab(name, order)
         local TabBtn = Create("TextButton", { Size = UDim2.new(1, -10, 0, 30), BackgroundColor3 = Theme.Element, Text = name, TextColor3 = Theme.Text, Font = Enum.Font.Gotham, TextSize = 13, Parent = TabContainer, AutoButtonColor = false, Visible = true, ZIndex = 3, LayoutOrder = order or 0 })
         Create("UICorner", { CornerRadius = UDim.new(0, 6), Parent = TabBtn }); AddHover(TabBtn)
@@ -202,42 +200,48 @@ function AnonmyUI:CreateWindow(config)
             return InputObj
         end
 
-        -- Lógica do Toggle Corrigida (Garante o liga/desliga)
+        -- ==========================================
+        -- LÓGICA DO TOGGLE TOTALMENTE REESCRITA E SEGURA
+        -- ==========================================
         function TabAPI:CreateToggle(text, default, callback, flag)
             local state = default or false
             local ToggleFrame = Create("TextButton", { Size = UDim2.new(1, -5, 0, 35), BackgroundColor3 = Theme.Element, Text = "", Parent = Page, AutoButtonColor = false, ZIndex = 3 })
             Create("UICorner", { CornerRadius = UDim.new(0, 6), Parent = ToggleFrame }); AddHover(ToggleFrame)
             local Title = Create("TextLabel", { Size = UDim2.new(1, -60, 1, 0), Position = UDim2.new(0, 12, 0, 0), BackgroundTransparency = 1, Text = text, TextColor3 = Theme.Text, Font = Enum.Font.Gotham, TextSize = 13, TextXAlignment = Enum.TextXAlignment.Left, Parent = ToggleFrame, ZIndex = 4 })
-            local Track = Create("Frame", { Size = UDim2.new(0, 40, 0, 20), Position = UDim2.new(1, -50, 0.5, -10), BackgroundColor3 = state and Theme.Accent or Color3.fromRGB(50, 50, 50), Parent = ToggleFrame, ZIndex = 4 })
+            local Track = Create("Frame", { Size = UDim2.new(0, 40, 0, 20), Position = UDim2.new(1, -50, 0.5, -10), BackgroundColor3 = Color3.fromRGB(50, 50, 50), Parent = ToggleFrame, ZIndex = 4 })
             Create("UICorner", { CornerRadius = UDim.new(1, 0), Parent = Track })
-            local Knob = Create("Frame", { Size = UDim2.new(0, 16, 0, 16), Position = state and UDim2.new(1, -18, 0.5, -8) or UDim2.new(0, 2, 0.5, -8), BackgroundColor3 = Color3.fromRGB(255, 255, 255), Parent = Track, ZIndex = 5 })
+            local Knob = Create("Frame", { Size = UDim2.new(0, 16, 0, 16), Position = UDim2.new(0, 2, 0.5, -8), BackgroundColor3 = Color3.fromRGB(255, 255, 255), Parent = Track, ZIndex = 5 })
             Create("UICorner", { CornerRadius = UDim.new(1, 0), Parent = Knob })
             
-            local function applyVisual()
+            local function updateVisual()
                 local targetColor = state and Theme.Accent or Color3.fromRGB(50, 50, 50)
                 local targetPos = state and UDim2.new(1, -18, 0.5, -8) or UDim2.new(0, 2, 0.5, -8)
                 TweenService:Create(Track, TweenInfo.new(0.3, Enum.EasingStyle.Quint), {BackgroundColor3 = targetColor}):Play()
                 TweenService:Create(Knob, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Position = targetPos}):Play()
             end
 
-            local ToggleObj = {
-                Set = function(newVal, skipCallback)
-                    state = newVal
-                    applyVisual()
-                    if flag then WindowAPI.Flags[flag] = state end
-                    if callback and not skipCallback then 
-                        local ok, err = pcall(callback, state)
-                        if not ok then warn("AnonmyUI | Toggle Callback Error:", err) end
-                    end
+            local function setState(newVal, skipCallback)
+                if state == newVal then return end
+                state = newVal
+                updateVisual()
+                if flag then WindowAPI.Flags[flag] = state end
+                if callback and not skipCallback then 
+                    local ok, err = pcall(callback, state)
+                    if not ok then warn("AnonmyUI | Toggle Callback Error:", err) end
                 end
-            }
+            end
+
+            -- Inicializa o visual corretamente
+            Track.BackgroundColor3 = state and Theme.Accent or Color3.fromRGB(50, 50, 50)
+            Knob.Position = state and UDim2.new(1, -18, 0.5, -8) or UDim2.new(0, 2, 0.5, -8)
+
+            local ToggleObj = { Set = setState }
+            if flag then WindowAPI.Elements[flag] = ToggleObj; WindowAPI.Flags[flag] = state end
             
             ToggleFrame.MouseButton1Click:Connect(function()
-                state = not state
-                ToggleObj:Set(state)
+                setState(not state)
             end)
             
-            if flag then WindowAPI.Elements[flag] = ToggleObj; WindowAPI.Flags[flag] = state end
             return ToggleObj
         end
 
@@ -375,7 +379,6 @@ function AnonmyUI:CreateWindow(config)
         return TabAPI
     end
 
-    -- Config Tab criada com LayoutOrder 1000 para ficar sempre por último
     local ConfigTab = WindowAPI:CreateTab("Config UI", 1000)
     local neonEnabled = false
     local currentRGB = {R = 0, G = 255, B = 200}
