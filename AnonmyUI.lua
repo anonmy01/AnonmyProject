@@ -1,6 +1,7 @@
--- AnonmyUI V5 (Toggle Menu Bug Fixed)
+-- AnonmyUI V6
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
 local CoreGui = game:GetService("CoreGui")
 
@@ -19,17 +20,32 @@ local Theme = {
     Text = Color3.fromRGB(255, 255, 255),
     Element = Color3.fromRGB(30, 30, 35),
     ElementHover = Color3.fromRGB(40, 40, 45),
-    Stroke = Color3.fromRGB(45, 45, 50)
+    Stroke = Color3.fromRGB(45, 45, 50),
+    Error = Color3.fromRGB(85, 0, 0)
 }
 
 local UIReferences = { Accents = {}, Backgrounds = {}, Strokes = {} }
 
 local function AddHover(btn)
-    btn.MouseEnter:Connect(function()
-        TweenService:Create(btn, TweenInfo.new(0.2), {BackgroundColor3 = Theme.ElementHover}):Play()
-    end)
-    btn.MouseLeave:Connect(function()
-        TweenService:Create(btn, TweenInfo.new(0.2), {BackgroundColor3 = Theme.Element}):Play()
+    btn.MouseEnter:Connect(function() TweenService:Create(btn, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {BackgroundColor3 = Theme.ElementHover}):Play() end)
+    btn.MouseLeave:Connect(function() TweenService:Create(btn, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {BackgroundColor3 = Theme.Element}):Play() end)
+end
+
+-- Função de Tratamento de Erros do Rayfield
+local function RunCallback(element, stroke, titleObj, origText, callback, ...)
+    local args = {...}
+    task.spawn(function()
+        local success, err = pcall(function() callback(table.unpack(args)) end)
+        if not success then
+            TweenService:Create(element, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {BackgroundColor3 = Theme.Error}):Play()
+            if stroke then TweenService:Create(stroke, TweenInfo.new(0.6), {Transparency = 1}):Play() end
+            if titleObj then titleObj.Text = "Callback Error" end
+            warn("AnonmyUI | Error: " .. tostring(err))
+            task.wait(0.5)
+            if titleObj then titleObj.Text = origText end
+            TweenService:Create(element, TweenInfo.new(0.6), {BackgroundColor3 = Theme.Element}):Play()
+            if stroke then TweenService:Create(stroke, TweenInfo.new(0.6), {Transparency = 0}):Play() end
+        end
     end)
 end
 
@@ -50,7 +66,7 @@ function AnonmyUI:CreateWindow(config)
     local Title = Create("TextLabel", { Size = UDim2.new(1, -20, 1, 0), Position = UDim2.new(0, 15, 0, 0), BackgroundTransparency = 1, Text = config.Name or "AnonmyUI", TextColor3 = Theme.Accent, Font = Enum.Font.GothamBold, TextSize = 15, TextXAlignment = Enum.TextXAlignment.Left, Parent = Topbar })
     table.insert(UIReferences.Accents, Title)
 
-    local dragging, dragInput, dragStart, startPos
+    local dragging, dragStart, startPos
     Topbar.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
             dragging = true; dragStart = input.Position; startPos = Main.Position
@@ -83,12 +99,9 @@ function AnonmyUI:CreateWindow(config)
         Create("UIPadding", { PaddingLeft = UDim.new(0, 5), PaddingRight = UDim.new(0, 5), PaddingTop = UDim.new(0, 5), PaddingBottom = UDim.new(0, 10), Parent = Page })
 
         TabBtn.MouseButton1Click:Connect(function()
-            for _, child in ipairs(ContentContainer:GetChildren()) do
-                if child:IsA("ScrollingFrame") then child.Visible = false end
-            end
+            for _, child in ipairs(ContentContainer:GetChildren()) do if child:IsA("ScrollingFrame") then child.Visible = false end end
             Page.Visible = true
         end)
-
         if not ContentContainer:FindFirstChild("ScrollingFrame") then Page.Visible = true end
 
         local TabAPI = {}
@@ -99,8 +112,7 @@ function AnonmyUI:CreateWindow(config)
             Create("UICorner", { CornerRadius = UDim.new(0, 6), Parent = ToggleFrame })
             AddHover(ToggleFrame)
             
-            Create("TextLabel", { Size = UDim2.new(1, -60, 1, 0), Position = UDim2.new(0, 12, 0, 0), BackgroundTransparency = 1, Text = text, TextColor3 = Theme.Text, Font = Enum.Font.Gotham, TextSize = 13, TextXAlignment = Enum.TextXAlignment.Left, Parent = ToggleFrame })
-            
+            local Title = Create("TextLabel", { Size = UDim2.new(1, -60, 1, 0), Position = UDim2.new(0, 12, 0, 0), BackgroundTransparency = 1, Text = text, TextColor3 = Theme.Text, Font = Enum.Font.Gotham, TextSize = 13, TextXAlignment = Enum.TextXAlignment.Left, Parent = ToggleFrame })
             local Track = Create("Frame", { Size = UDim2.new(0, 40, 0, 20), Position = UDim2.new(1, -50, 0.5, -10), BackgroundColor3 = state and Theme.Accent or Color3.fromRGB(50, 50, 50), Parent = ToggleFrame })
             Create("UICorner", { CornerRadius = UDim.new(1, 0), Parent = Track })
             local Knob = Create("Frame", { Size = UDim2.new(0, 16, 0, 16), Position = state and UDim2.new(1, -18, 0.5, -8) or UDim2.new(0, 2, 0.5, -8), BackgroundColor3 = Color3.fromRGB(255, 255, 255), Parent = Track })
@@ -110,18 +122,23 @@ function AnonmyUI:CreateWindow(config)
                 state = not state
                 TweenService:Create(Track, TweenInfo.new(0.2), {BackgroundColor3 = state and Theme.Accent or Color3.fromRGB(50, 50, 50)}):Play()
                 TweenService:Create(Knob, TweenInfo.new(0.2), {Position = state and UDim2.new(1, -18, 0.5, -8) or UDim2.new(0, 2, 0.5, -8)}):Play()
-                if callback then callback(state) end
+                RunCallback(ToggleFrame, nil, Title, text, callback, state)
             end)
         end
 
         function TabAPI:CreateButton(text, callback)
             local Btn = Create("TextButton", { Size = UDim2.new(1, -5, 0, 35), BackgroundColor3 = Theme.Element, Text = text, TextColor3 = Theme.Text, Font = Enum.Font.Gotham, TextSize = 13, Parent = Page, AutoButtonColor = false })
+            local Stroke = Create("UIStroke", { Color = Theme.Stroke, Transparency = 0, Parent = Btn })
             Create("UICorner", { CornerRadius = UDim.new(0, 6), Parent = Btn })
             AddHover(Btn)
-            Btn.MouseButton1Click:Connect(function() if callback then callback() end end)
+            Btn.MouseButton1Click:Connect(function()
+                TweenService:Create(Btn, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {BackgroundColor3 = Theme.ElementHover}):Play()
+                RunCallback(Btn, Stroke, Btn, text, callback)
+                task.delay(0.2, function() TweenService:Create(Btn, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {BackgroundColor3 = Theme.Element}):Play() end)
+            end)
         end
 
-        function TabAPI:CreateSlider(text, min, max, default, callback)
+        function TabAPI:CreateSlider(text, min, max, increment, default, callback)
             local SliderFrame = Create("Frame", { Size = UDim2.new(1, -5, 0, 45), BackgroundColor3 = Theme.Element, Parent = Page })
             Create("UICorner", { CornerRadius = UDim.new(0, 6), Parent = SliderFrame })
             Create("TextLabel", { Size = UDim2.new(1, -60, 1, 0), Position = UDim2.new(0, 12, 0, 0), BackgroundTransparency = 1, Text = text, TextColor3 = Theme.Text, Font = Enum.Font.Gotham, TextSize = 13, TextXAlignment = Enum.TextXAlignment.Left, Parent = SliderFrame })
@@ -135,18 +152,22 @@ function AnonmyUI:CreateWindow(config)
             Create("UICorner", { CornerRadius = UDim.new(1, 0), Parent = Knob })
 
             local dragging = false
-            Track.InputBegan:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = true end end)
+            local function update(input)
+                local rel = math.clamp((input.Position.X - Track.AbsolutePosition.X) / Track.AbsoluteSize.X, 0, 1)
+                -- Lógica de Increment do Rayfield
+                local raw = min + (max - min) * rel
+                local val = math.floor(raw / increment + 0.5) * (increment * 10000000) / 10000000
+                val = math.clamp(val, min, max)
+                
+                Fill.Size = UDim2.new(rel, 0, 1, 0)
+                Knob.Position = UDim2.new(rel, -7, 0.5, -7)
+                ValueLabel.Text = tostring(val)
+                callback(val)
+            end
+
+            Track.InputBegan:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = true update(input) end end)
             UserInputService.InputEnded:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end end)
-            UserInputService.InputChanged:Connect(function(input)
-                if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
-                    local rel = math.clamp((input.Position.X - Track.AbsolutePosition.X) / Track.AbsoluteSize.X, 0, 1)
-                    local val = math.floor(min + (max - min) * rel)
-                    Fill.Size = UDim2.new(rel, 0, 1, 0)
-                    Knob.Position = UDim2.new(rel, -7, 0.5, -7)
-                    ValueLabel.Text = tostring(val)
-                    if callback then callback(val) end
-                end
-            end)
+            UserInputService.InputChanged:Connect(function(input) if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then update(input) end end)
         end
 
         function TabAPI:CreateDropdown(text, options, default, multiSelect, callback)
@@ -167,6 +188,17 @@ function AnonmyUI:CreateWindow(config)
                 DropdownFrame.Size = ListFrame.Visible and UDim2.new(1, -5, 0, 35 + (#options * 30) + 5) or UDim2.new(1, -5, 0, 35)
             end)
 
+            local function updateText()
+                if multiSelect then
+                    if #selected == 0 then ValueLabel.Text = "None"
+                    elseif #selected == 1 then ValueLabel.Text = selected[1]
+                    else ValueLabel.Text = "Various" end
+                else
+                    ValueLabel.Text = tostring(selected)
+                end
+            end
+            updateText()
+
             for _, opt in ipairs(options) do
                 local OptBtn = Create("TextButton", { Size = UDim2.new(1, -4, 0, 28), BackgroundColor3 = Theme.Element, Text = opt, TextColor3 = Theme.Text, Font = Enum.Font.Gotham, TextSize = 12, Parent = ListFrame, ZIndex = 11 })
                 Create("UICorner", { CornerRadius = UDim.new(0, 4), Parent = OptBtn })
@@ -175,19 +207,19 @@ function AnonmyUI:CreateWindow(config)
                     if multiSelect then
                         local idx = table.find(selected, opt)
                         if idx then table.remove(selected, idx) else table.insert(selected, opt) end
-                        ValueLabel.Text = #selected > 0 and tostring(selected) or "Vazio"
+                        updateText()
                     else
                         selected = opt
-                        ValueLabel.Text = tostring(selected)
+                        updateText()
                         ListFrame.Visible = false
                         DropdownFrame.Size = UDim2.new(1, -5, 0, 35)
                     end
-                    if callback then callback(selected) end
+                    callback(selected)
                 end)
             end
         end
 
-        function TabAPI:CreateKeybind(text, default, callback)
+        function TabAPI:CreateKeybind(text, default, holdToInteract, callback)
             local currentKey = default or Enum.KeyCode.Unknown
             local KeyFrame = Create("Frame", { Size = UDim2.new(1, -5, 0, 35), BackgroundColor3 = Theme.Element, Parent = Page })
             Create("UICorner", { CornerRadius = UDim.new(0, 6), Parent = KeyFrame })
@@ -197,6 +229,7 @@ function AnonmyUI:CreateWindow(config)
             Create("UICorner", { CornerRadius = UDim.new(0, 4), Parent = KeyLabel })
             
             local waiting = false
+            local holding = false
             local Btn = Create("TextButton", { Size = UDim2.new(1, 0, 1, 0), BackgroundTransparency = 1, Text = "", Parent = KeyFrame, AutoButtonColor = false })
             AddHover(KeyFrame)
             
@@ -207,26 +240,37 @@ function AnonmyUI:CreateWindow(config)
 
             UserInputService.InputBegan:Connect(function(input, gameProcessed)
                 local isTyping = gameProcessed and UserInputService:GetFocusedTextBox() ~= nil
-                
                 if isTyping and not waiting then return end 
                 
                 if waiting then
                     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.MouseButton2 or input.UserInputType == Enum.UserInputType.MouseButton3 then return end
-                    
-                    if input.KeyCode == Enum.KeyCode.Escape then
-                        waiting = false
-                        KeyLabel.Text = currentKey.Name
-                        return
-                    end
+                    if input.KeyCode == Enum.KeyCode.Escape then waiting = false KeyLabel.Text = currentKey.Name return end
 
                     waiting = false
                     currentKey = input.KeyCode
                     KeyLabel.Text = currentKey.Name
-                    if callback then callback(currentKey) end
+                    callback(currentKey)
                 elseif input.KeyCode == currentKey and currentKey ~= Enum.KeyCode.Unknown then
                     if not isTyping then
-                        if callback then callback(currentKey, true) end
+                        holding = true
+                        if not holdToInteract then
+                            callback(true)
+                        else
+                            task.spawn(function()
+                                while holding do
+                                    callback(true)
+                                    RunService.RenderStepped:Wait()
+                                end
+                            end)
+                        end
                     end
+                end
+            end)
+
+            UserInputService.InputEnded:Connect(function(input)
+                if input.KeyCode == currentKey and holding then
+                    holding = false
+                    if holdToInteract then callback(false) end
                 end
             end)
         end
@@ -234,9 +278,7 @@ function AnonmyUI:CreateWindow(config)
         return TabAPI
     end
 
-    -- ==========================================
-    -- SISTEMA DE CONFIGURAÇÕES (Bug do Toggle Corrigido)
-    -- ==========================================
+    -- CONFIG TAB
     local ConfigTab = WindowAPI:CreateTab("Config UI")
     local neonEnabled = false
     local currentRGB = {R = 0, G = 255, B = 200}
@@ -248,56 +290,36 @@ function AnonmyUI:CreateWindow(config)
             if obj:IsA("TextLabel") then obj.TextColor3 = Theme.Accent
             elseif obj:IsA("Frame") then obj.BackgroundColor3 = Theme.Accent end
         end
-        if neonEnabled then
-            MainStroke.Color = Theme.Accent
-            MainStroke.Thickness = 2
-            MainStroke.Transparency = 0
-        end
+        if neonEnabled then MainStroke.Color = Theme.Accent MainStroke.Thickness = 2 MainStroke.Transparency = 0 end
     end
 
     ConfigTab:CreateToggle("Modo Neon (Borda)", false, function(state)
         neonEnabled = state
-        if state then
-            MainStroke.Color = Theme.Accent
-            MainStroke.Thickness = 2
-            MainStroke.Transparency = 0
-        else
-            MainStroke.Color = Theme.Stroke
-            MainStroke.Thickness = 1
-        end
+        if state then MainStroke.Color = Theme.Accent MainStroke.Thickness = 2 MainStroke.Transparency = 0
+        else MainStroke.Color = Theme.Stroke MainStroke.Thickness = 1 end
     end)
-    ConfigTab:CreateSlider("Cor Vermelha (R)", 0, 255, 0, function(val) currentRGB.R = val UpdateThemeColor() end)
-    ConfigTab:CreateSlider("Cor Verde (G)", 0, 255, 200, function(val) currentRGB.G = val UpdateThemeColor() end)
-    ConfigTab:CreateSlider("Cor Azul (B)", 0, 255, 200, function(val) currentRGB.B = val UpdateThemeColor() end)
-    ConfigTab:CreateSlider("Transparência da Janela", 0, 1, 0, function(val) Main.BackgroundTransparency = val Topbar.BackgroundTransparency = val end)
+    ConfigTab:CreateSlider("Cor Vermelha (R)", 0, 255, 1, 0, function(val) currentRGB.R = val UpdateThemeColor() end)
+    ConfigTab:CreateSlider("Cor Verde (G)", 0, 255, 1, 200, function(val) currentRGB.G = val UpdateThemeColor() end)
+    ConfigTab:CreateSlider("Cor Azul (B)", 0, 255, 1, 200, function(val) currentRGB.B = val UpdateThemeColor() end)
+    ConfigTab:CreateSlider("Transparência da Janela", 0, 1, 0.01, 0, function(val) Main.BackgroundTransparency = val Topbar.BackgroundTransparency = val end)
     
     local keybindBtn = ConfigTab:CreateButton("Abrir/Fechar Menu: K")
     local waitingForKey = false
-    keybindBtn.MouseButton1Click:Connect(function()
-        waitingForKey = true
-        keybindBtn.Text = "Pressione uma tecla..."
-    end)
+    keybindBtn.MouseButton1Click:Connect(function() waitingForKey = true keybindBtn.Text = "Pressione uma tecla..." end)
     
     UserInputService.InputBegan:Connect(function(input, gameProcessed)
         local isTyping = gameProcessed and UserInputService:GetFocusedTextBox() ~= nil
-        
         if isTyping and not waitingForKey then return end
         
         if waitingForKey then
             if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.MouseButton2 then return end
-            if input.KeyCode == Enum.KeyCode.Escape then
-                waitingForKey = false
-                keybindBtn.Text = "Abrir/Fechar Menu: " .. toggleKeybind.Name
-                return
-            end
+            if input.KeyCode == Enum.KeyCode.Escape then waitingForKey = false keybindBtn.Text = "Abrir/Fechar Menu: " .. toggleKeybind.Name return end
             
             waitingForKey = false
             toggleKeybind = input.KeyCode
             keybindBtn.Text = "Abrir/Fechar Menu: " .. toggleKeybind.Name
         elseif input.KeyCode == toggleKeybind then
-            if not isTyping then
-                Main.Visible = not Main.Visible
-            end
+            if not isTyping then Main.Visible = not Main.Visible end
         end
     end)
 
