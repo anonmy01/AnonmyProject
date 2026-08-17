@@ -1,4 +1,4 @@
--- AnonmyUI V4 (Keybind System Fixed)
+-- AnonmyUI V5 (Toggle Menu Bug Fixed)
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local Players = game:GetService("Players")
@@ -187,9 +187,6 @@ function AnonmyUI:CreateWindow(config)
             end
         end
 
-        -- ==========================================
-        -- SISTEMA DE KEYBIND CORRIGIDO (V4)
-        -- ==========================================
         function TabAPI:CreateKeybind(text, default, callback)
             local currentKey = default or Enum.KeyCode.Unknown
             local KeyFrame = Create("Frame", { Size = UDim2.new(1, -5, 0, 35), BackgroundColor3 = Theme.Element, Parent = Page })
@@ -203,37 +200,33 @@ function AnonmyUI:CreateWindow(config)
             local Btn = Create("TextButton", { Size = UDim2.new(1, 0, 1, 0), BackgroundTransparency = 1, Text = "", Parent = KeyFrame, AutoButtonColor = false })
             AddHover(KeyFrame)
             
-            -- Clique para iniciar a captura
             Btn.MouseButton1Click:Connect(function()
                 waiting = not waiting
                 KeyLabel.Text = waiting and "..." or currentKey.Name
             end)
 
             UserInputService.InputBegan:Connect(function(input, gameProcessed)
-                -- gameProcessed evita ativar a tecla enquanto digita no chat do Roblox
-                if gameProcessed and not waiting then return end 
+                local isTyping = gameProcessed and UserInputService:GetFocusedTextBox() ~= nil
+                
+                if isTyping and not waiting then return end 
                 
                 if waiting then
-                    -- Ignora botões do mouse para não atrapalhar a UI
-                    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.MouseButton2 or input.UserInputType == Enum.UserInputType.MouseButton3 then
-                        return
-                    end
+                    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.MouseButton2 or input.UserInputType == Enum.UserInputType.MouseButton3 then return end
                     
-                    -- Esc cancela a mudança
                     if input.KeyCode == Enum.KeyCode.Escape then
                         waiting = false
                         KeyLabel.Text = currentKey.Name
                         return
                     end
 
-                    -- Registra a nova tecla
                     waiting = false
                     currentKey = input.KeyCode
                     KeyLabel.Text = currentKey.Name
                     if callback then callback(currentKey) end
                 elseif input.KeyCode == currentKey and currentKey ~= Enum.KeyCode.Unknown then
-                    -- Aciona a função da tecla
-                    if callback then callback(currentKey, true) end
+                    if not isTyping then
+                        if callback then callback(currentKey, true) end
+                    end
                 end
             end)
         end
@@ -242,7 +235,7 @@ function AnonmyUI:CreateWindow(config)
     end
 
     -- ==========================================
-    -- SISTEMA DE CONFIGURAÇÕES
+    -- SISTEMA DE CONFIGURAÇÕES (Bug do Toggle Corrigido)
     -- ==========================================
     local ConfigTab = WindowAPI:CreateTab("Config UI")
     local neonEnabled = false
@@ -286,7 +279,9 @@ function AnonmyUI:CreateWindow(config)
     end)
     
     UserInputService.InputBegan:Connect(function(input, gameProcessed)
-        if gameProcessed and not waitingForKey then return end
+        local isTyping = gameProcessed and UserInputService:GetFocusedTextBox() ~= nil
+        
+        if isTyping and not waitingForKey then return end
         
         if waitingForKey then
             if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.MouseButton2 then return end
@@ -300,7 +295,9 @@ function AnonmyUI:CreateWindow(config)
             toggleKeybind = input.KeyCode
             keybindBtn.Text = "Abrir/Fechar Menu: " .. toggleKeybind.Name
         elseif input.KeyCode == toggleKeybind then
-            Main.Visible = not Main.Visible
+            if not isTyping then
+                Main.Visible = not Main.Visible
+            end
         end
     end)
 
