@@ -1,4 +1,4 @@
--- AnonmyUI V12 (Sombra, Inputs, Seções e Config Saving)
+-- AnonmyUI V13 (Toggle Fix e Ordem das Abas)
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
@@ -73,7 +73,6 @@ function AnonmyUI:CreateWindow(config)
     pcall(function() ScreenGui.Parent = CoreGui end)
     if not ScreenGui.Parent then ScreenGui.Parent = Players.LocalPlayer:WaitForChild("PlayerGui") end
 
-    -- Sistema de Sombras (Drop Shadow)
     local Shadow = Create("ImageLabel", {
         Name = "Shadow", AnchorPoint = Vector2.new(0.5, 0.5), Size = UDim2.new(0, 530, 0, 380),
         Position = UDim2.new(0.5, 0, 0.5, 0), BackgroundTransparency = 1, Image = "rbxassetid://6014261993",
@@ -93,7 +92,6 @@ function AnonmyUI:CreateWindow(config)
     local Title = Create("TextLabel", { Size = UDim2.new(1, -20, 1, 0), Position = UDim2.new(0, 15, 0, 0), BackgroundTransparency = 1, Text = config.Name or "AnonmyUI", TextColor3 = Theme.Accent, Font = Enum.Font.GothamBold, TextSize = 15, TextXAlignment = Enum.TextXAlignment.Left, Parent = Topbar })
     table.insert(UIReferences.Accents, Title)
 
-    -- Arraste atualizado para mover a Sombra junto
     local dragging, dragStart, startPos
     local function updateDrag(input)
         local delta = input.Position - dragStart
@@ -111,22 +109,20 @@ function AnonmyUI:CreateWindow(config)
         if input.UserInputType == Enum.UserInputType.MouseMovement and dragging then updateDrag(input) end
     end)
 
-    -- Animação de Abertura
-    Main.Size = UDim2.new(0, 500, 0, 0)
-    Shadow.ImageTransparency = 1
-    Main.Visible = true; Shadow.Visible = true
+    Main.Size = UDim2.new(0, 500, 0, 0); Shadow.ImageTransparency = 1; Main.Visible = true; Shadow.Visible = true
     TweenService:Create(Main, TweenInfo.new(0.6, Enum.EasingStyle.Exponential, Enum.EasingDirection.Out), {Size = UDim2.new(0, 500, 0, 350)}):Play()
     TweenService:Create(Shadow, TweenInfo.new(0.6, Enum.EasingStyle.Exponential, Enum.EasingDirection.Out), {ImageTransparency = 0.5}):Play()
 
+    -- TabContainer agora tem SortOrder = LayoutOrder para garantir a posição
     local TabContainer = Create("ScrollingFrame", { Size = UDim2.new(0, 140, 1, -50), Position = UDim2.new(0, 10, 0, 45), BackgroundColor3 = Theme.Topbar, BorderSizePixel = 0, Parent = Main, ScrollBarThickness = 0, AutomaticCanvasSize = Enum.AutomaticSize.Y, ZIndex = 2 })
     Create("UICorner", { CornerRadius = UDim.new(0, 8), Parent = TabContainer })
-    CreateListLayout(TabContainer, 5); CreatePadding(TabContainer, 0, 0, 5, 0)
+    local tabListLayout = CreateListLayout(TabContainer, 5)
+    tabListLayout.SortOrder = Enum.SortOrder.LayoutOrder -- Força a usar a ordem que definirmos
+    CreatePadding(TabContainer, 0, 0, 5, 0)
 
     local ContentContainer = Create("Frame", { Size = UDim2.new(1, -160, 1, -50), Position = UDim2.new(0, 150, 0, 45), BackgroundTransparency = 1, Parent = Main, ZIndex = 2, ClipsDescendants = true })
 
     local WindowAPI = {}
-    
-    -- Sistema de Config Saving
     WindowAPI.Flags = {}
     WindowAPI.Elements = {}
     local CEnabled = config.ConfigurationSaving and config.ConfigurationSaving.Enabled or false
@@ -152,8 +148,9 @@ function AnonmyUI:CreateWindow(config)
         end
     end
 
-    function WindowAPI:CreateTab(name)
-        local TabBtn = Create("TextButton", { Size = UDim2.new(1, -10, 0, 30), BackgroundColor3 = Theme.Element, Text = name, TextColor3 = Theme.Text, Font = Enum.Font.Gotham, TextSize = 13, Parent = TabContainer, AutoButtonColor = false, ZIndex = 3 })
+    -- Adicionado parâmetro "order" para definir a posição da aba
+    function WindowAPI:CreateTab(name, order)
+        local TabBtn = Create("TextButton", { Size = UDim2.new(1, -10, 0, 30), BackgroundColor3 = Theme.Element, Text = name, TextColor3 = Theme.Text, Font = Enum.Font.Gotham, TextSize = 13, Parent = TabContainer, AutoButtonColor = false, Visible = true, ZIndex = 3, LayoutOrder = order or 0 })
         Create("UICorner", { CornerRadius = UDim.new(0, 6), Parent = TabBtn }); AddHover(TabBtn)
         local Page = Create("ScrollingFrame", { Size = UDim2.new(1, 0, 1, 0), BackgroundTransparency = 1, ScrollBarThickness = 3, Visible = false, Parent = ContentContainer, AutomaticCanvasSize = Enum.AutomaticSize.Y, ZIndex = 3, ClipsDescendants = true })
         CreateListLayout(Page, 8); CreatePadding(Page, 5, 5, 5, 10)
@@ -205,6 +202,7 @@ function AnonmyUI:CreateWindow(config)
             return InputObj
         end
 
+        -- Lógica do Toggle Corrigida (Garante o liga/desliga)
         function TabAPI:CreateToggle(text, default, callback, flag)
             local state = default or false
             local ToggleFrame = Create("TextButton", { Size = UDim2.new(1, -5, 0, 35), BackgroundColor3 = Theme.Element, Text = "", Parent = Page, AutoButtonColor = false, ZIndex = 3 })
@@ -215,16 +213,30 @@ function AnonmyUI:CreateWindow(config)
             local Knob = Create("Frame", { Size = UDim2.new(0, 16, 0, 16), Position = state and UDim2.new(1, -18, 0.5, -8) or UDim2.new(0, 2, 0.5, -8), BackgroundColor3 = Color3.fromRGB(255, 255, 255), Parent = Track, ZIndex = 5 })
             Create("UICorner", { CornerRadius = UDim.new(1, 0), Parent = Knob })
             
+            local function applyVisual()
+                local targetColor = state and Theme.Accent or Color3.fromRGB(50, 50, 50)
+                local targetPos = state and UDim2.new(1, -18, 0.5, -8) or UDim2.new(0, 2, 0.5, -8)
+                TweenService:Create(Track, TweenInfo.new(0.3, Enum.EasingStyle.Quint), {BackgroundColor3 = targetColor}):Play()
+                TweenService:Create(Knob, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Position = targetPos}):Play()
+            end
+
             local ToggleObj = {
                 Set = function(newVal, skipCallback)
                     state = newVal
-                    TweenService:Create(Track, TweenInfo.new(0.3, Enum.EasingStyle.Quint), {BackgroundColor3 = state and Theme.Accent or Color3.fromRGB(50, 50, 50)}):Play()
-                    TweenService:Create(Knob, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Position = state and UDim2.new(1, -18, 0.5, -8) or UDim2.new(0, 2, 0.5, -8)}):Play()
+                    applyVisual()
                     if flag then WindowAPI.Flags[flag] = state end
-                    if callback and not skipCallback then callback(state) end
+                    if callback and not skipCallback then 
+                        local ok, err = pcall(callback, state)
+                        if not ok then warn("AnonmyUI | Toggle Callback Error:", err) end
+                    end
                 end
             }
-            ToggleFrame.MouseButton1Click:Connect(function() ToggleObj:Set(not state) end)
+            
+            ToggleFrame.MouseButton1Click:Connect(function()
+                state = not state
+                ToggleObj:Set(state)
+            end)
+            
             if flag then WindowAPI.Elements[flag] = ToggleObj; WindowAPI.Flags[flag] = state end
             return ToggleObj
         end
@@ -363,7 +375,8 @@ function AnonmyUI:CreateWindow(config)
         return TabAPI
     end
 
-    local ConfigTab = WindowAPI:CreateTab("Config UI")
+    -- Config Tab criada com LayoutOrder 1000 para ficar sempre por último
+    local ConfigTab = WindowAPI:CreateTab("Config UI", 1000)
     local neonEnabled = false
     local currentRGB = {R = 0, G = 255, B = 200}
 
@@ -393,7 +406,6 @@ function AnonmyUI:CreateWindow(config)
         if state == true then Main.Visible = not Main.Visible end
     end)
 
-    -- Auto-Carregar configuração ao iniciar
     WindowAPI:LoadConfiguration()
 
     return WindowAPI
