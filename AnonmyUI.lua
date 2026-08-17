@@ -1,4 +1,4 @@
--- AnonmyUI V8 (Bug do Padding Corrigido)
+-- AnonmyUI V9 (Bug de Index Nil Corrigido)
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
@@ -31,7 +31,6 @@ local function Create(class, props)
     return inst
 end
 
--- Função isolada para ListLayout (Evita o bug de UDim/UDim2)
 local function CreateListLayout(parent, pad)
     local layout = Instance.new("UIListLayout")
     layout.Padding = UDim.new(0, pad)
@@ -39,7 +38,6 @@ local function CreateListLayout(parent, pad)
     return layout
 end
 
--- Função isolada para Padding
 local function CreatePadding(parent, left, right, top, bottom)
     local pad = Instance.new("UIPadding")
     pad.PaddingLeft = UDim.new(0, left)
@@ -175,6 +173,7 @@ function AnonmyUI:CreateWindow(config)
                 RunCallback(Btn, Stroke, Btn, text, callback)
                 task.delay(0.2, function() TweenService:Create(Btn, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {BackgroundColor3 = Theme.Element}):Play() end)
             end)
+            return Btn -- Retornado para evitar erros de index
         end
 
         function TabAPI:CreateSlider(text, min, max, increment, default, callback)
@@ -287,16 +286,16 @@ function AnonmyUI:CreateWindow(config)
                     waiting = false
                     currentKey = input.KeyCode
                     KeyLabel.Text = currentKey.Name
-                    callback(currentKey)
+                    if callback then callback(currentKey) end
                 elseif input.KeyCode == currentKey and currentKey ~= Enum.KeyCode.Unknown then
                     if not isTyping then
                         holding = true
                         if not holdToInteract then
-                            callback(true)
+                            if callback then callback(true) end
                         else
                             task.spawn(function()
                                 while holding do
-                                    callback(true)
+                                    if callback then callback(true) end
                                     RunService.RenderStepped:Wait()
                                 end
                             end)
@@ -308,7 +307,7 @@ function AnonmyUI:CreateWindow(config)
             UserInputService.InputEnded:Connect(function(input)
                 if input.KeyCode == currentKey and holding then
                     holding = false
-                    if holdToInteract then callback(false) end
+                    if holdToInteract and callback then callback(false) end
                 end
             end)
         end
@@ -316,11 +315,12 @@ function AnonmyUI:CreateWindow(config)
         return TabAPI
     end
 
-    -- CONFIG TAB
+    -- ==========================================
+    -- SISTEMA DE CONFIGURAÇÕES
+    -- ==========================================
     local ConfigTab = WindowAPI:CreateTab("Config UI")
     local neonEnabled = false
     local currentRGB = {R = 0, G = 255, B = 200}
-    local toggleKeybind = Enum.KeyCode.K
 
     local function UpdateThemeColor()
         Theme.Accent = Color3.fromRGB(currentRGB.R, currentRGB.G, currentRGB.B)
@@ -341,23 +341,10 @@ function AnonmyUI:CreateWindow(config)
     ConfigTab:CreateSlider("Cor Azul (B)", 0, 255, 1, 200, function(val) currentRGB.B = val UpdateThemeColor() end)
     ConfigTab:CreateSlider("Transparência da Janela", 0, 1, 0.01, 0, function(val) Main.BackgroundTransparency = val Topbar.BackgroundTransparency = val end)
     
-    local keybindBtn = ConfigTab:CreateButton("Abrir/Fechar Menu: K")
-    local waitingForKey = false
-    keybindBtn.MouseButton1Click:Connect(function() waitingForKey = true keybindBtn.Text = "Pressione uma tecla..." end)
-    
-    UserInputService.InputBegan:Connect(function(input, gameProcessed)
-        local isTyping = gameProcessed and UserInputService:GetFocusedTextBox() ~= nil
-        if isTyping and not waitingForKey then return end
-        
-        if waitingForKey then
-            if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.MouseButton2 then return end
-            if input.KeyCode == Enum.KeyCode.Escape then waitingForKey = false keybindBtn.Text = "Abrir/Fechar Menu: " .. toggleKeybind.Name return end
-            
-            waitingForKey = false
-            toggleKeybind = input.KeyCode
-            keybindBtn.Text = "Abrir/Fechar Menu: " .. toggleKeybind.Name
-        elseif input.KeyCode == toggleKeybind then
-            if not isTyping then Main.Visible = not Main.Visible end
+    -- Utilizando o próprio sistema de Keybind para o Menu Toggle
+    ConfigTab:CreateKeybind("Abrir/Fechar Menu", Enum.KeyCode.K, false, function(state)
+        if state == true then
+            Main.Visible = not Main.Visible
         end
     end)
 
