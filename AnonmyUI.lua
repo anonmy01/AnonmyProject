@@ -1,10 +1,12 @@
--- AnonmyUI V17 (Blur Removido + Notificações, Parágrafos, Progresso e Clipboard)
+-- AnonmyUI V19 (Final Library)
+-- Biblioteca de UI 100% autoral e nativa
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local CoreGui = game:GetService("CoreGui")
+local VirtualUser = game:GetService("VirtualUser")
 
 local AnonmyUI = {}
 
@@ -31,8 +33,7 @@ local function Create(class, props)
 end
 
 local function CreateGradient(parent, c1, c2)
-    local grad = Instance.new("UIGradient")
-    grad.Rotation = 90; grad.Color = ColorSequence.new(c1, c2); grad.Parent = parent
+    local grad = Instance.new("UIGradient"); grad.Rotation = 90; grad.Color = ColorSequence.new(c1, c2); grad.Parent = parent
 end
 
 local function CreateListLayout(parent, pad)
@@ -73,7 +74,22 @@ function AnonmyUI:CreateWindow(config)
     pcall(function() ScreenGui.Parent = CoreGui end)
     if not ScreenGui.Parent then ScreenGui.Parent = Players.LocalPlayer:WaitForChild("PlayerGui") end
 
-    -- Container de Notificações (Toasts)
+    local TooltipFrame = Create("TextLabel", { Name = "Tooltip", BackgroundColor3 = Color3.fromRGB(0, 0, 0), BackgroundTransparency = 0.3, TextColor3 = Color3.fromRGB(255, 255, 255), Font = Enum.Font.Gotham, TextSize = 12, Visible = false, ZIndex = 2000, Parent = ScreenGui, AutomaticSize = Enum.AutomaticSize.XY })
+    Create("UICorner", { CornerRadius = UDim.new(0, 4), Parent = TooltipFrame })
+    Create("UIPadding", { PaddingTop = UDim.new(0, 4), PaddingBottom = UDim.new(0, 4), PaddingLeft = UDim.new(0, 6), PaddingRight = UDim.new(0, 6), Parent = TooltipFrame })
+
+    local function AttachTooltip(element, text)
+        if not text then return end
+        element.MouseEnter:Connect(function() TooltipFrame.Text = text; TooltipFrame.Visible = true; TooltipFrame.Size = UDim2.new(0, 0, 0, 0) end)
+        element.MouseLeave:Connect(function() TooltipFrame.Visible = false end)
+        UserInputService.InputChanged:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseMovement and TooltipFrame.Visible then
+                local mousePos = UserInputService:GetMouseLocation()
+                TooltipFrame.Position = UDim2.new(0, mousePos.X + 15, 0, mousePos.Y - 30)
+            end
+        end)
+    end
+
     local ToastContainer = Create("Frame", { Size = UDim2.new(0, 300, 1, 0), Position = UDim2.new(1, -310, 0, 10), BackgroundTransparency = 1, Parent = ScreenGui, ZIndex = 1000 })
     CreateListLayout(ToastContainer, 10).VerticalAlignment = Enum.VerticalAlignment.Bottom
 
@@ -133,12 +149,32 @@ function AnonmyUI:CreateWindow(config)
     local ContentContainer = Create("Frame", { Size = UDim2.new(1, -160, 1, -50), Position = UDim2.new(0, 150, 0, 45), BackgroundTransparency = 1, Parent = Main, ZIndex = 2, ClipsDescendants = true })
 
     local WindowAPI = {}
-    WindowAPI.Flags = {}; WindowAPI.Elements = {}
+    WindowAPI.Flags = {}; WindowAPI.Elements = {}; WindowAPI.Connections = {}; WindowAPI.Unloaded = false
     local CEnabled = config.ConfigurationSaving and config.ConfigurationSaving.Enabled or false
     local CFolder = "AnonmyUI_Configs"
     local CFileName = (config.ConfigurationSaving and config.ConfigurationSaving.FileName) or "config1"
 
-    -- Função de Notificação (Toast)
+    local function setupAntiAfk(state)
+        if state then
+            WindowAPI.AntiAfkConn = Players.LocalPlayer.Idled:Connect(function()
+                pcall(function()
+                    VirtualUser:CaptureController()
+                    VirtualUser:ClickButton(Vector2.new(1, 1), workspace.CurrentCamera.CFrame)
+                end)
+            end)
+        else
+            if WindowAPI.AntiAfkConn then WindowAPI.AntiAfkConn:Disconnect(); WindowAPI.AntiAfkConn = nil end
+        end
+    end
+
+    function WindowAPI:Unload()
+        if self.Unloaded then return end
+        self.Unloaded = true
+        setupAntiAfk(false)
+        for _, conn in ipairs(self.Connections) do pcall(function() conn:Disconnect() end) end
+        ScreenGui:Destroy()
+    end
+
     function WindowAPI:Notify(title, content, duration)
         duration = duration or 5
         local Toast = Create("Frame", { Size = UDim2.new(1, 0, 0, 80), BackgroundColor3 = Theme.Background, ClipsDescendants = true, Parent = ToastContainer, ZIndex = 1001, Position = UDim2.new(1, 0, 0, 0) })
@@ -149,10 +185,8 @@ function AnonmyUI:CreateWindow(config)
         local TitleLabel = Create("TextLabel", { Text = title, TextColor3 = Theme.Accent, Font = Enum.Font.GothamBold, TextSize = 14, BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 20), TextXAlignment = Enum.TextXAlignment.Left, Parent = Toast })
         local ContentLabel = Create("TextLabel", { Text = content, TextColor3 = Theme.Text, Font = Enum.Font.Gotham, TextSize = 13, BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 40), TextWrapped = true, TextYAlignment = Enum.TextYAlignment.Top, Parent = Toast })
         table.insert(UIReferences.Accents, TitleLabel)
-        
         Toast.Position = UDim2.new(1, 0, 0, 0)
         TweenService:Create(Toast, TweenInfo.new(0.5, Enum.EasingStyle.Exponential, Enum.EasingDirection.Out), {Position = UDim2.new(0, 0, 0, 0)}):Play()
-        
         task.delay(duration, function()
             local t = TweenService:Create(Toast, TweenInfo.new(0.5, Enum.EasingStyle.Exponential, Enum.EasingDirection.In), {Position = UDim2.new(1, 300, 0, 0)})
             t:Play(); t.Completed:Wait(); Toast:Destroy()
@@ -198,87 +232,146 @@ function AnonmyUI:CreateWindow(config)
         if not ContentContainer:FindFirstChild("ScrollingFrame") then Page.Visible = true end
 
         local TabAPI = {}
+        local PageElements = {}
+
+        function TabAPI:CreateSearchBar(placeholder)
+            local SearchBox = Create("Frame", { Size = UDim2.new(1, -5, 0, 30), BackgroundColor3 = Color3.fromRGB(40, 40, 50), Parent = Page, ZIndex = 3, LayoutOrder = 0 })
+            Create("UICorner", { CornerRadius = UDim.new(0, 6), Parent = SearchBox })
+            local Input = Create("TextBox", { Size = UDim2.new(1, -10, 1, 0), Position = UDim2.new(0, 5, 0, 0), BackgroundTransparency = 1, Text = "", PlaceholderText = placeholder or "Buscar...", TextColor3 = Theme.Accent, Font = Enum.Font.GothamBold, TextSize = 12, TextXAlignment = Enum.TextXAlignment.Center, Parent = SearchBox, ZIndex = 5, ClearTextOnFocus = false })
+            table.insert(UIReferences.Accents, Input)
+            Input:GetPropertyChangedSignal("Text"):Connect(function()
+                local search = string.lower(Input.Text)
+                for _, elem in ipairs(PageElements) do
+                    elem.Visible = string.find(string.lower(elem.Name), search) ~= nil
+                end
+            end)
+            return SearchBox
+        end
 
         function TabAPI:CreateSection(text)
-            local SectionFrame = Create("Frame", { Size = UDim2.new(1, -5, 0, 25), BackgroundTransparency = 1, Parent = Page, ZIndex = 3 })
+            local SectionFrame = Create("Frame", { Size = UDim2.new(1, -5, 0, 25), BackgroundTransparency = 1, Parent = Page, ZIndex = 3, Name = text })
             CreateListLayout(SectionFrame, 2)
             local Label = Create("TextLabel", { Size = UDim2.new(1, 0, 0, 15), BackgroundTransparency = 1, Text = text, TextColor3 = Theme.Accent, Font = Enum.Font.GothamBold, TextSize = 12, TextXAlignment = Enum.TextXAlignment.Left, Parent = SectionFrame, ZIndex = 4 })
             local Divider = Create("Frame", { Size = UDim2.new(1, 0, 0, 1), BackgroundColor3 = Theme.Stroke, BorderSizePixel = 0, Parent = SectionFrame, ZIndex = 4 })
             table.insert(UIReferences.Accents, Label)
         end
 
-        -- NOVO: Parágrafo / Label
         function TabAPI:CreateParagraph(title, content)
-            local Frame = Create("Frame", { Size = UDim2.new(1, -5, 0, 60), BackgroundColor3 = Theme.Element, Parent = Page, ZIndex = 3, AutomaticSize = Enum.AutomaticSize.Y })
+            local Frame = Create("Frame", { Size = UDim2.new(1, -5, 0, 60), BackgroundColor3 = Theme.Element, Parent = Page, ZIndex = 3, AutomaticSize = Enum.AutomaticSize.Y, Name = title })
             Create("UICorner", { CornerRadius = UDim.new(0, 6), Parent = Frame })
-            CreateListLayout(Frame, 5)
-            CreatePadding(Frame, 12, 12, 8, 8)
+            CreateListLayout(Frame, 5); CreatePadding(Frame, 12, 12, 8, 8)
             local TitleLabel = Create("TextLabel", { Text = title, TextColor3 = Theme.Accent, Font = Enum.Font.GothamBold, TextSize = 13, BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 20), TextXAlignment = Enum.TextXAlignment.Left, Parent = Frame, ZIndex = 4 })
             local ContentLabel = Create("TextLabel", { Text = content, TextColor3 = Theme.Text, Font = Enum.Font.Gotham, TextSize = 12, BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 20), TextWrapped = true, AutomaticSize = Enum.AutomaticSize.Y, TextYAlignment = Enum.TextYAlignment.Top, Parent = Frame, ZIndex = 4 })
             table.insert(UIReferences.Accents, TitleLabel)
         end
 
-        -- NOVO: Barra de Progresso
-        function TabAPI:CreateProgressBar(text)
-            local Frame = Create("Frame", { Size = UDim2.new(1, -5, 0, 45), BackgroundColor3 = Theme.Element, Parent = Page, ZIndex = 3 })
+        function TabAPI:CreateProgressBar(text, tooltip)
+            local Frame = Create("Frame", { Size = UDim2.new(1, -5, 0, 45), BackgroundColor3 = Theme.Element, Parent = Page, ZIndex = 3, Name = text })
             Create("UICorner", { CornerRadius = UDim.new(0, 6), Parent = Frame })
+            AttachTooltip(Frame, tooltip)
             Create("TextLabel", { Size = UDim2.new(1, -40, 1, 0), Position = UDim2.new(0, 12, 0, 0), BackgroundTransparency = 1, Text = text, TextColor3 = Theme.Text, Font = Enum.Font.Gotham, TextSize = 13, TextXAlignment = Enum.TextXAlignment.Left, Parent = Frame, ZIndex = 4 })
             local ValueLabel = Create("TextLabel", { Size = UDim2.new(0, 40, 1, 0), Position = UDim2.new(1, -45, 0, 0), BackgroundTransparency = 1, Text = "0%", TextColor3 = Theme.Accent, Font = Enum.Font.GothamBold, TextSize = 13, Parent = Frame, ZIndex = 4 })
             local Track = Create("Frame", { Size = UDim2.new(1, -24, 0, 6), Position = UDim2.new(0, 12, 1, -15), BackgroundColor3 = Color3.fromRGB(40, 40, 40), Parent = Frame, ZIndex = 4 })
             Create("UICorner", { CornerRadius = UDim.new(1, 0), Parent = Track })
             local Fill = Create("Frame", { Size = UDim2.new(0, 0, 1, 0), BackgroundColor3 = Theme.Accent, Parent = Track, ZIndex = 5 })
             Create("UICorner", { CornerRadius = UDim.new(1, 0), Parent = Fill })
-            
-            local ProgressObj = {
-                Set = function(val)
-                    val = math.clamp(val, 0, 100)
-                    ValueLabel.Text = tostring(val) .. "%"
-                    TweenService:Create(Fill, TweenInfo.new(0.3, Enum.EasingStyle.Quint), {Size = UDim2.new(val/100, 0, 1, 0)}):Play()
-                end
-            }
+            local ProgressObj = { Set = function(self, val) val = math.clamp(val, 0, 100); ValueLabel.Text = tostring(val) .. "%"; TweenService:Create(Fill, TweenInfo.new(0.3, Enum.EasingStyle.Quint), {Size = UDim2.new(val/100, 0, 1, 0)}):Play() end }
+            table.insert(PageElements, Frame)
             return ProgressObj
         end
 
-        -- NOVO: Botão de Copiar (Clipboard)
-        function TabAPI:CreateCopyButton(text, value)
-            local Frame = Create("Frame", { Size = UDim2.new(1, -5, 0, 35), BackgroundColor3 = Theme.Element, Parent = Page, ZIndex = 3 })
-            Create("UICorner", { CornerRadius = UDim.new(0, 6), Parent = Frame })
+        function TabAPI:CreateCopyButton(text, value, tooltip)
+            local Frame = Create("Frame", { Size = UDim2.new(1, -5, 0, 35), BackgroundColor3 = Theme.Element, Parent = Page, ZIndex = 3, Name = text })
+            Create("UICorner", { CornerRadius = UDim.new(0, 6), Parent = Frame }); AddHover(Frame); AttachTooltip(Frame, tooltip)
             Create("TextLabel", { Size = UDim2.new(1, -120, 1, 0), Position = UDim2.new(0, 12, 0, 0), BackgroundTransparency = 1, Text = text, TextColor3 = Theme.Text, Font = Enum.Font.Gotham, TextSize = 13, TextXAlignment = Enum.TextXAlignment.Left, Parent = Frame, ZIndex = 4 })
             local Box = Create("Frame", { Size = UDim2.new(0, 60, 0, 25), Position = UDim2.new(1, -130, 0.5, -12.5), BackgroundColor3 = Color3.fromRGB(40, 40, 50), Parent = Frame, ZIndex = 4 })
             Create("UICorner", { CornerRadius = UDim.new(0, 4), Parent = Box })
             Create("TextLabel", { Size = UDim2.new(1, -10, 1, 0), Position = UDim2.new(0, 5, 0, 0), BackgroundTransparency = 1, Text = value, TextColor3 = Theme.Accent, Font = Enum.Font.GothamBold, TextSize = 11, TextXAlignment = Enum.TextXAlignment.Center, Parent = Box, ZIndex = 5 })
             local Btn = Create("TextButton", { Size = UDim2.new(0, 60, 0, 25), Position = UDim2.new(1, -65, 0.5, -12.5), BackgroundColor3 = Theme.Accent, Text = "Copiar", TextColor3 = Color3.fromRGB(255,255,255), Font = Enum.Font.GothamBold, TextSize = 11, Parent = Frame, ZIndex = 4 })
             Create("UICorner", { CornerRadius = UDim.new(0, 4), Parent = Btn })
-            AddHover(Btn)
             Btn.MouseButton1Click:Connect(function()
-                if setclipboard then
-                    setclipboard(value)
-                    WindowAPI:Notify("Copiado!", "O texto foi copiado para a área de transferência.", 3)
-                else
-                    WindowAPI:Notify("Erro", "Seu executor não suporta cópia.", 3)
-                end
+                if setclipboard then setclipboard(value); WindowAPI:Notify("Copiado!", "O texto foi copiado.", 3) else WindowAPI:Notify("Erro", "Sem suporte.", 3) end
             end)
+            table.insert(PageElements, Frame)
         end
 
-        function TabAPI:CreateInput(text, default, placeholder, callback, flag)
-            local InputFrame = Create("Frame", { Size = UDim2.new(1, -5, 0, 35), BackgroundColor3 = Theme.Element, Parent = Page, ZIndex = 3 })
-            Create("UICorner", { CornerRadius = UDim.new(0, 6), Parent = InputFrame }); AddHover(InputFrame)
+        function TabAPI:CreateColorPicker(text, defaultColor, callback, flag, tooltip)
+            local CPFrame = Create("Frame", { Size = UDim2.new(1, -5, 0, 35), BackgroundColor3 = Theme.Element, Parent = Page, ZIndex = 3, Name = text })
+            Create("UICorner", { CornerRadius = UDim.new(0, 6), Parent = CPFrame }); AddHover(CPFrame); AttachTooltip(CPFrame, tooltip)
+            Create("TextLabel", { Size = UDim2.new(1, -60, 1, 0), Position = UDim2.new(0, 12, 0, 0), BackgroundTransparency = 1, Text = text, TextColor3 = Theme.Text, Font = Enum.Font.Gotham, TextSize = 13, TextXAlignment = Enum.TextXAlignment.Left, Parent = CPFrame, ZIndex = 4 })
+            local ColorPreview = Create("Frame", { Size = UDim2.new(0, 40, 0, 20), Position = UDim2.new(1, -50, 0.5, -10), BackgroundColor3 = defaultColor, Parent = CPFrame, ZIndex = 4 })
+            Create("UICorner", { CornerRadius = UDim.new(0, 4), Parent = ColorPreview })
+            local h, s, v = defaultColor:ToHSV()
+            local open = false
+            
+            local Panel = Create("Frame", { Size = UDim2.new(0, 150, 0, 120), Position = UDim2.new(0, 0, 1, 5), BackgroundColor3 = Theme.Background, Visible = false, Parent = CPFrame, ZIndex = 20 })
+            Create("UICorner", { CornerRadius = UDim.new(0, 6), Parent = Panel })
+            Create("UIPadding", { PaddingTop = UDim.new(0, 5), PaddingBottom = UDim.new(0, 5), PaddingLeft = UDim.new(0, 5), PaddingRight = UDim.new(0, 5), Parent = Panel })
+            local SVBox = Create("Frame", { Size = UDim2.new(1, 0, 0, 90), BackgroundColor3 = Color3.fromHSV(h, 1, 1), Parent = Panel, ZIndex = 21 })
+            Create("UICorner", { CornerRadius = UDim.new(0, 4), Parent = SVBox })
+            local WhiteGrad = Create("UIGradient", { Color = ColorSequence.new(Color3.fromRGB(255,255,255), Color3.fromRGB(255,255,255)), Transparency = NumberSequence.new(0, 1), Parent = SVBox })
+            local BlackGrad = Create("UIGradient", { Color = ColorSequence.new(Color3.fromRGB(0,0,0), Color3.fromRGB(0,0,0)), Transparency = NumberSequence.new(1, 0), Rotation = 90, Parent = SVBox })
+            
+            local HueBar = Create("Frame", { Size = UDim2.new(1, 0, 0, 10), Position = UDim2.new(0, 0, 1, -10), BackgroundColor3 = Color3.fromRGB(255,255,255), Parent = Panel, ZIndex = 21 })
+            Create("UICorner", { CornerRadius = UDim.new(1, 0), Parent = HueBar })
+            local Rainbow = Create("UIGradient", { Color = ColorSequence.new({ColorSequenceKeypoint.new(0, Color3.fromRGB(255,0,0)), ColorSequenceKeypoint.new(0.17, Color3.fromRGB(255,255,0)), ColorSequenceKeypoint.new(0.33, Color3.fromRGB(0,255,0)), ColorSequenceKeypoint.new(0.5, Color3.fromRGB(0,255,255)), ColorSequenceKeypoint.new(0.67, Color3.fromRGB(0,0,255)), ColorSequenceKeypoint.new(0.83, Color3.fromRGB(255,0,255)), ColorSequenceKeypoint.new(1, Color3.fromRGB(255,0,0))}), Parent = HueBar })
+
+            local function updateColor()
+                local c = Color3.fromHSV(h, s, v)
+                ColorPreview.BackgroundColor3 = c
+                SVBox.BackgroundColor3 = Color3.fromHSV(h, 1, 1)
+                if flag then WindowAPI.Flags[flag] = c end
+                if callback then callback(c) end
+            end
+
+            local draggingSV, draggingHue = false, false
+            local c1 = SVBox.InputBegan:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 then draggingSV = true; local relX = math.clamp((input.Position.X - SVBox.AbsolutePosition.X) / SVBox.AbsoluteSize.X, 0, 1); local relY = math.clamp((input.Position.Y - SVBox.AbsolutePosition.Y) / SVBox.AbsoluteSize.Y, 0, 1); s = relX; v = 1 - relY; updateColor() end end)
+            local c2 = UserInputService.InputEnded:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 then draggingSV = false; draggingHue = false end end)
+            local c3 = UserInputService.InputChanged:Connect(function(input)
+                if draggingSV and input.UserInputType == Enum.UserInputType.MouseMovement then
+                    local relX = math.clamp((input.Position.X - SVBox.AbsolutePosition.X) / SVBox.AbsoluteSize.X, 0, 1); local relY = math.clamp((input.Position.Y - SVBox.AbsolutePosition.Y) / SVBox.AbsoluteSize.Y, 0, 1)
+                    s = relX; v = 1 - relY; updateColor()
+                elseif draggingHue and input.UserInputType == Enum.UserInputType.MouseMovement then
+                    local relX = math.clamp((input.Position.X - HueBar.AbsolutePosition.X) / HueBar.AbsoluteSize.X, 0, 1)
+                    h = relX; updateColor()
+                end
+            end)
+            table.insert(WindowAPI.Connections, c1); table.insert(WindowAPI.Connections, c2); table.insert(WindowAPI.Connections, c3)
+            local c4 = HueBar.InputBegan:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 then draggingHue = true; local relX = math.clamp((input.Position.X - HueBar.AbsolutePosition.X) / HueBar.AbsoluteSize.X, 0, 1); h = relX; updateColor() end end)
+            
+            local Btn = Create("TextButton", { Size = UDim2.new(1, 0, 1, 0), BackgroundTransparency = 1, Text = "", Parent = CPFrame, ZIndex = 5 })
+            Btn.MouseButton1Click:Connect(function()
+                open = not open
+                Panel.Visible = open
+                TweenService:Create(CPFrame, TweenInfo.new(0.3, Enum.EasingStyle.Exponential), {Size = open and UDim2.new(1, -5, 0, 160) or UDim2.new(1, -5, 0, 35)}):Play()
+            end)
+            
+            local ColorObj = { Set = function(self, val, skip) h, s, v = val:ToHSV(); updateColor() end }
+            if flag then WindowAPI.Elements[flag] = ColorObj; WindowAPI.Flags[flag] = defaultColor end
+            table.insert(PageElements, CPFrame)
+            return ColorObj
+        end
+
+        function TabAPI:CreateInput(text, default, placeholder, callback, flag, tooltip)
+            local InputFrame = Create("Frame", { Size = UDim2.new(1, -5, 0, 35), BackgroundColor3 = Theme.Element, Parent = Page, ZIndex = 3, Name = text })
+            Create("UICorner", { CornerRadius = UDim.new(0, 6), Parent = InputFrame }); AddHover(InputFrame); AttachTooltip(InputFrame, tooltip)
             Create("TextLabel", { Size = UDim2.new(1, -100, 1, 0), Position = UDim2.new(0, 12, 0, 0), BackgroundTransparency = 1, Text = text, TextColor3 = Theme.Text, Font = Enum.Font.Gotham, TextSize = 13, TextXAlignment = Enum.TextXAlignment.Left, Parent = InputFrame, ZIndex = 4 })
             local Box = Create("Frame", { Size = UDim2.new(0, 80, 0, 25), Position = UDim2.new(1, -85, 0.5, -12.5), BackgroundColor3 = Color3.fromRGB(40, 40, 50), Parent = InputFrame, ZIndex = 4 })
             Create("UICorner", { CornerRadius = UDim.new(0, 4), Parent = Box })
             local TextBox = Create("TextBox", { Size = UDim2.new(1, -10, 1, 0), Position = UDim2.new(0, 5, 0, 0), BackgroundTransparency = 1, Text = default or "", PlaceholderText = placeholder or "Digite...", TextColor3 = Theme.Accent, Font = Enum.Font.GothamBold, TextSize = 11, TextXAlignment = Enum.TextXAlignment.Center, Parent = Box, ZIndex = 5, ClearTextOnFocus = false })
             table.insert(UIReferences.Accents, TextBox)
-            local InputObj = { Set = function(newVal, skipCallback) TextBox.Text = newVal; if flag then WindowAPI.Flags[flag] = newVal end; if callback and not skipCallback then callback(newVal) end end }
+            local InputObj = { Set = function(self, newVal, skipCallback) TextBox.Text = newVal; if flag then WindowAPI.Flags[flag] = newVal end; if callback and not skipCallback then callback(newVal) end end }
             TextBox.FocusLost:Connect(function() if flag then WindowAPI.Flags[flag] = TextBox.Text end; if callback then callback(TextBox.Text) end end)
             if flag then WindowAPI.Elements[flag] = InputObj; WindowAPI.Flags[flag] = default or "" end
+            table.insert(PageElements, InputFrame)
             return InputObj
         end
 
-        function TabAPI:CreateToggle(text, default, callback, flag)
+        function TabAPI:CreateToggle(text, default, callback, flag, tooltip)
             local state = default or false
             local origSize = UDim2.new(1, -5, 0, 35)
-            local ToggleFrame = Create("TextButton", { Size = origSize, BackgroundColor3 = Theme.Element, Text = "", Parent = Page, AutoButtonColor = false, ZIndex = 3 })
-            Create("UICorner", { CornerRadius = UDim.new(0, 6), Parent = ToggleFrame }); AddHover(ToggleFrame)
+            local ToggleFrame = Create("TextButton", { Size = origSize, BackgroundColor3 = Theme.Element, Text = "", Parent = Page, AutoButtonColor = false, ZIndex = 3, Name = text })
+            Create("UICorner", { CornerRadius = UDim.new(0, 6), Parent = ToggleFrame }); AddHover(ToggleFrame); AttachTooltip(ToggleFrame, tooltip)
             local Title = Create("TextLabel", { Size = UDim2.new(1, -60, 1, 0), Position = UDim2.new(0, 12, 0, 0), BackgroundTransparency = 1, Text = text, TextColor3 = Theme.Text, Font = Enum.Font.Gotham, TextSize = 13, TextXAlignment = Enum.TextXAlignment.Left, Parent = ToggleFrame, ZIndex = 4 })
             local Track = Create("Frame", { Size = UDim2.new(0, 40, 0, 20), Position = UDim2.new(1, -50, 0.5, -10), BackgroundColor3 = Color3.fromRGB(50, 50, 50), Parent = ToggleFrame, ZIndex = 4 })
             Create("UICorner", { CornerRadius = UDim.new(1, 0), Parent = Track })
@@ -290,7 +383,7 @@ function AnonmyUI:CreateWindow(config)
                 TweenService:Create(Track, TweenInfo.new(0.3, Enum.EasingStyle.Quint), {BackgroundColor3 = targetColor}):Play()
                 TweenService:Create(Knob, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Position = targetPos}):Play()
             end
-            local function setState(newVal, skipCallback)
+            local function setState(self, newVal, skipCallback)
                 if state == newVal then return end
                 state = newVal; updateVisual()
                 if flag then WindowAPI.Flags[flag] = state end
@@ -303,16 +396,17 @@ function AnonmyUI:CreateWindow(config)
             ToggleFrame.MouseButton1Click:Connect(function()
                 TweenService:Create(ToggleFrame, TweenInfo.new(0.1), {Size = UDim2.new(1, -10, 0, 30)}):Play()
                 task.delay(0.1, function() TweenService:Create(ToggleFrame, TweenInfo.new(0.2), {Size = origSize}):Play() end)
-                setState(not state)
+                ToggleObj:Set(not state)
             end)
+            table.insert(PageElements, ToggleFrame)
             return ToggleObj
         end
 
-        function TabAPI:CreateButton(text, callback)
+        function TabAPI:CreateButton(text, callback, tooltip)
             local origSize = UDim2.new(1, -5, 0, 35)
-            local Btn = Create("TextButton", { Size = origSize, BackgroundColor3 = Theme.Element, Text = text, TextColor3 = Theme.Text, Font = Enum.Font.Gotham, TextSize = 13, Parent = Page, AutoButtonColor = false, ZIndex = 3 })
+            local Btn = Create("TextButton", { Size = origSize, BackgroundColor3 = Theme.Element, Text = text, TextColor3 = Theme.Text, Font = Enum.Font.Gotham, TextSize = 13, Parent = Page, AutoButtonColor = false, ZIndex = 3, Name = text })
             local Stroke = Create("UIStroke", { Color = Theme.Stroke, Transparency = 0, Parent = Btn })
-            Create("UICorner", { CornerRadius = UDim.new(0, 6), Parent = Btn }); AddHover(Btn)
+            Create("UICorner", { CornerRadius = UDim.new(0, 6), Parent = Btn }); AddHover(Btn); AttachTooltip(Btn, tooltip)
             Btn.MouseButton1Click:Connect(function()
                 TweenService:Create(Btn, TweenInfo.new(0.1), {Size = UDim2.new(1, -10, 0, 30)}):Play()
                 task.delay(0.1, function()
@@ -321,12 +415,13 @@ function AnonmyUI:CreateWindow(config)
                 end)
                 task.delay(0.2, function() TweenService:Create(Btn, TweenInfo.new(0.4), {BackgroundColor3 = Theme.Element}):Play() end)
             end)
+            table.insert(PageElements, Btn)
             return Btn
         end
 
-        function TabAPI:CreateSlider(text, min, max, increment, default, callback, flag)
-            local SliderFrame = Create("Frame", { Size = UDim2.new(1, -5, 0, 45), BackgroundColor3 = Theme.Element, Parent = Page, ZIndex = 3 })
-            Create("UICorner", { CornerRadius = UDim.new(0, 6), Parent = SliderFrame })
+        function TabAPI:CreateSlider(text, min, max, increment, default, callback, flag, tooltip)
+            local SliderFrame = Create("Frame", { Size = UDim2.new(1, -5, 0, 45), BackgroundColor3 = Theme.Element, Parent = Page, ZIndex = 3, Name = text })
+            Create("UICorner", { CornerRadius = UDim.new(0, 6), Parent = SliderFrame }); AttachTooltip(SliderFrame, tooltip)
             Create("TextLabel", { Size = UDim2.new(1, -60, 1, 0), Position = UDim2.new(0, 12, 0, 0), BackgroundTransparency = 1, Text = text, TextColor3 = Theme.Text, Font = Enum.Font.Gotham, TextSize = 13, TextXAlignment = Enum.TextXAlignment.Left, Parent = SliderFrame, ZIndex = 4 })
             local ValueLabel = Create("TextLabel", { Size = UDim2.new(0, 50, 1, 0), Position = UDim2.new(1, -55, 0, 0), BackgroundTransparency = 1, Text = tostring(default), TextColor3 = Theme.Accent, Font = Enum.Font.GothamBold, TextSize = 13, Parent = SliderFrame, ZIndex = 4 })
             local Track = Create("Frame", { Size = UDim2.new(1, -24, 0, 6), Position = UDim2.new(0, 12, 1, -15), BackgroundColor3 = Color3.fromRGB(40, 40, 40), Parent = SliderFrame, ZIndex = 4 })
@@ -335,12 +430,10 @@ function AnonmyUI:CreateWindow(config)
             Create("UICorner", { CornerRadius = UDim.new(1, 0), Parent = Fill })
             local Knob = Create("Frame", { Size = UDim2.new(0, 14, 0, 14), Position = UDim2.new((default - min) / (max - min), -4, 0.5, -7), BackgroundColor3 = Color3.fromRGB(255, 255, 255), Parent = Track, ZIndex = 6 })
             Create("UICorner", { CornerRadius = UDim.new(1, 0), Parent = Knob })
-            local dragging = false
-            local dragTweenInfo = TweenInfo.new(0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+            local dragging = false; local dragTweenInfo = TweenInfo.new(0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
             local SliderObj = {
-                Set = function(newVal, skipCallback)
-                    newVal = math.clamp(newVal, min, max)
-                    local rel = (newVal - min) / (max - min)
+                Set = function(self, newVal, skipCallback)
+                    newVal = math.clamp(newVal, min, max); local rel = (newVal - min) / (max - min)
                     TweenService:Create(Fill, dragTweenInfo, {Size = UDim2.new(rel, 0, 1, 0)}):Play()
                     TweenService:Create(Knob, dragTweenInfo, {Position = UDim2.new(rel, -7, 0.5, -7)}):Play()
                     ValueLabel.Text = tostring(newVal)
@@ -352,19 +445,21 @@ function AnonmyUI:CreateWindow(config)
                 local rel = math.clamp((input.Position.X - Track.AbsolutePosition.X) / Track.AbsoluteSize.X, 0, 1)
                 local raw = min + (max - min) * rel
                 local val = math.floor(raw / increment + 0.5) * (increment * 10000000) / 10000000
-                SliderObj.Set(val)
+                SliderObj:Set(val)
             end
             Track.InputBegan:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = true update(input) end end)
-            UserInputService.InputEnded:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end end)
-            UserInputService.InputChanged:Connect(function(input) if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then update(input) end end)
+            local c1 = UserInputService.InputEnded:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end end)
+            local c2 = UserInputService.InputChanged:Connect(function(input) if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then update(input) end end)
+            table.insert(WindowAPI.Connections, c1); table.insert(WindowAPI.Connections, c2)
             if flag then WindowAPI.Elements[flag] = SliderObj; WindowAPI.Flags[flag] = default end
+            table.insert(PageElements, SliderFrame)
             return SliderObj
         end
 
-        function TabAPI:CreateDropdown(text, options, default, multiSelect, callback, flag)
+        function TabAPI:CreateDropdown(text, options, default, multiSelect, callback, flag, tooltip)
             local selected = default or (multiSelect and {} or options[1])
-            local DropdownFrame = Create("Frame", { Size = UDim2.new(1, -5, 0, 35), BackgroundColor3 = Theme.Element, Parent = Page, ZIndex = 3 })
-            Create("UICorner", { CornerRadius = UDim.new(0, 6), Parent = DropdownFrame })
+            local DropdownFrame = Create("Frame", { Size = UDim2.new(1, -5, 0, 35), BackgroundColor3 = Theme.Element, Parent = Page, ZIndex = 3, Name = text })
+            Create("UICorner", { CornerRadius = UDim.new(0, 6), Parent = DropdownFrame }); AttachTooltip(DropdownFrame, tooltip)
             Create("TextLabel", { Size = UDim2.new(1, -100, 1, 0), Position = UDim2.new(0, 12, 0, 0), BackgroundTransparency = 1, Text = text, TextColor3 = Theme.Text, Font = Enum.Font.Gotham, TextSize = 13, TextXAlignment = Enum.TextXAlignment.Left, Parent = DropdownFrame, ZIndex = 4 })
             local ValueLabel = Create("TextLabel", { Size = UDim2.new(0, 80, 1, 0), Position = UDim2.new(1, -90, 0, 0), BackgroundTransparency = 1, Text = tostring(selected), TextColor3 = Theme.Accent, Font = Enum.Font.GothamBold, TextSize = 12, TextXAlignment = Enum.TextXAlignment.Right, Parent = DropdownFrame, ZIndex = 4 })
             local ListFrame = Create("Frame", { Size = UDim2.new(1, 0, 0, 0), Position = UDim2.new(0, 0, 1, 5), BackgroundColor3 = Theme.Topbar, Visible = false, ZIndex = 10, Parent = DropdownFrame })
@@ -372,7 +467,7 @@ function AnonmyUI:CreateWindow(config)
             CreateListLayout(ListFrame, 2); CreatePadding(ListFrame, 0, 0, 2, 2)
             local Btn = Create("TextButton", { Size = UDim2.new(1, 0, 1, 0), BackgroundTransparency = 1, Text = "", Parent = DropdownFrame, ZIndex = 5 })
             local DropdownObj = {
-                Set = function(newVal, skipCallback)
+                Set = function(self, newVal, skipCallback)
                     selected = newVal
                     if multiSelect then
                         if #selected == 0 then ValueLabel.Text = "None"
@@ -393,23 +488,19 @@ function AnonmyUI:CreateWindow(config)
                 local OptBtn = Create("TextButton", { Size = UDim2.new(1, -4, 0, 28), BackgroundColor3 = Theme.Element, Text = opt, TextColor3 = Theme.Text, Font = Enum.Font.Gotham, TextSize = 12, Parent = ListFrame, ZIndex = 11 })
                 Create("UICorner", { CornerRadius = UDim.new(0, 4), Parent = OptBtn }); AddHover(OptBtn)
                 OptBtn.MouseButton1Click:Connect(function()
-                    if multiSelect then
-                        local idx = table.find(selected, opt)
-                        if idx then table.remove(selected, idx) else table.insert(selected, opt) end
-                        DropdownObj.Set(selected)
-                    else
-                        DropdownObj.Set(opt); toggleList()
-                    end
+                    if multiSelect then local idx = table.find(selected, opt); if idx then table.remove(selected, idx) else table.insert(selected, opt) end; DropdownObj:Set(selected)
+                    else DropdownObj:Set(opt); toggleList() end
                 end)
             end
             if flag then WindowAPI.Elements[flag] = DropdownObj; WindowAPI.Flags[flag] = selected end
+            table.insert(PageElements, DropdownFrame)
             return DropdownObj
         end
 
-        function TabAPI:CreateKeybind(text, default, holdToInteract, callback)
+        function TabAPI:CreateKeybind(text, default, holdToInteract, callback, tooltip)
             local currentKey = default or Enum.KeyCode.Unknown
-            local KeyFrame = Create("Frame", { Size = UDim2.new(1, -5, 0, 35), BackgroundColor3 = Theme.Element, Parent = Page, ZIndex = 3 })
-            Create("UICorner", { CornerRadius = UDim.new(0, 6), Parent = KeyFrame })
+            local KeyFrame = Create("Frame", { Size = UDim2.new(1, -5, 0, 35), BackgroundColor3 = Theme.Element, Parent = Page, ZIndex = 3, Name = text })
+            Create("UICorner", { CornerRadius = UDim.new(0, 6), Parent = KeyFrame }); AttachTooltip(KeyFrame, tooltip)
             Create("TextLabel", { Size = UDim2.new(1, -60, 1, 0), Position = UDim2.new(0, 12, 0, 0), BackgroundTransparency = 1, Text = text, TextColor3 = Theme.Text, Font = Enum.Font.Gotham, TextSize = 13, TextXAlignment = Enum.TextXAlignment.Left, Parent = KeyFrame, ZIndex = 4 })
             local KeyLabel = Create("TextLabel", { Size = UDim2.new(0, 45, 0, 25), Position = UDim2.new(1, -50, 0.5, -12.5), BackgroundColor3 = Color3.fromRGB(40, 40, 50), Text = currentKey.Name, TextColor3 = Theme.Accent, Font = Enum.Font.GothamBold, TextSize = 11, Parent = KeyFrame, ZIndex = 4 })
             Create("UICorner", { CornerRadius = UDim.new(0, 4), Parent = KeyLabel })
@@ -417,7 +508,7 @@ function AnonmyUI:CreateWindow(config)
             local Btn = Create("TextButton", { Size = UDim2.new(1, 0, 1, 0), BackgroundTransparency = 1, Text = "", Parent = KeyFrame, AutoButtonColor = false, ZIndex = 5 })
             AddHover(KeyFrame)
             Btn.MouseButton1Click:Connect(function() waiting = not waiting; KeyLabel.Text = waiting and "..." or currentKey.Name end)
-            UserInputService.InputBegan:Connect(function(input, gameProcessed)
+            local c1 = UserInputService.InputBegan:Connect(function(input, gameProcessed)
                 local isTyping = gameProcessed and UserInputService:GetFocusedTextBox() ~= nil
                 if isTyping and not waiting then return end 
                 if waiting then
@@ -433,9 +524,9 @@ function AnonmyUI:CreateWindow(config)
                     end
                 end
             end)
-            UserInputService.InputEnded:Connect(function(input)
-                if input.KeyCode == currentKey and holding then holding = false; if holdToInteract and callback then callback(false) end end
-            end)
+            local c2 = UserInputService.InputEnded:Connect(function(input) if input.KeyCode == currentKey and holding then holding = false; if holdToInteract and callback then callback(false) end end end)
+            table.insert(WindowAPI.Connections, c1); table.insert(WindowAPI.Connections, c2)
+            table.insert(PageElements, KeyFrame)
         end
 
         return TabAPI
@@ -452,16 +543,19 @@ function AnonmyUI:CreateWindow(config)
         if neonEnabled then MainStroke.Color = Theme.Accent; MainStroke.Thickness = 2; MainStroke.Transparency = 0 end
     end
 
-    ConfigTab:CreateToggle("Modo Neon (Borda)", false, function(state) neonEnabled = state; if state then MainStroke.Color = Theme.Accent; MainStroke.Thickness = 2; MainStroke.Transparency = 0 else MainStroke.Color = Theme.Stroke; MainStroke.Thickness = 1 end end)
-    ConfigTab:CreateSlider("Cor Vermelha (R)", 0, 255, 1, 0, function(val) currentRGB.R = val; UpdateThemeColor() end)
-    ConfigTab:CreateSlider("Cor Verde (G)", 0, 255, 1, 200, function(val) currentRGB.G = val; UpdateThemeColor() end)
-    ConfigTab:CreateSlider("Cor Azul (B)", 0, 255, 1, 200, function(val) currentRGB.B = val; UpdateThemeColor() end)
-    ConfigTab:CreateSlider("Transparência da Janela", 0, 1, 0.01, 0, function(val) Main.BackgroundTransparency = val; Topbar.BackgroundTransparency = val end)
-    
-    ConfigTab:CreateButton("Salvar Configuração", function() WindowAPI:SaveConfiguration(); WindowAPI:Notify("Salvo!", "Suas configurações foram salvas.", 3) end)
-    ConfigTab:CreateButton("Carregar Configuração", function() WindowAPI:LoadConfiguration(); WindowAPI:Notify("Carregado!", "Suas configurações foram carregadas.", 3) end)
-    ConfigTab:CreateKeybind("Abrir/Fechar Menu", Enum.KeyCode.K, false, function(state) if state == true then uiVisible = not uiVisible; toggleUI(uiVisible) end end)
+    ConfigTab:CreateToggle("Anti-AFK", true, function(state) setupAntiAfk(state) end, "AntiAfkFlag", "Impede o Roblox de te kickar por inatividade")
+    ConfigTab:CreateToggle("Modo Neon (Borda)", false, function(state) neonEnabled = state; if state then MainStroke.Color = Theme.Accent; MainStroke.Thickness = 2; MainStroke.Transparency = 0 else MainStroke.Color = Theme.Stroke; MainStroke.Thickness = 1 end end, "NeonFlag", "Ativa uma borda brilhante na janela")
+    ConfigTab:CreateSlider("Cor Vermelha (R)", 0, 255, 1, 0, function(val) currentRGB.R = val; UpdateThemeColor() end, "RFlag", "Controla a cor vermelha do tema")
+    ConfigTab:CreateSlider("Cor Verde (G)", 0, 255, 1, 200, function(val) currentRGB.G = val; UpdateThemeColor() end, "GFlag", "Controla a cor verde do tema")
+    ConfigTab:CreateSlider("Cor Azul (B)", 0, 255, 1, 200, function(val) currentRGB.B = val; UpdateThemeColor() end, "BFlag", "Controla a cor azul do tema")
+    ConfigTab:CreateColorPicker("Cor da UI", Color3.fromRGB(0, 255, 200), function(c) currentRGB.R = math.floor(c.R * 255); currentRGB.G = math.floor(c.G * 255); currentRGB.B = math.floor(c.B * 255); UpdateThemeColor() end, "UIColorFlag", "Seletor visual de cores HSV")
+    ConfigTab:CreateSlider("Transparência da Janela", 0, 1, 0.01, 0, function(val) Main.BackgroundTransparency = val; Topbar.BackgroundTransparency = val end, "TransparencyFlag")
+    ConfigTab:CreateButton("Salvar Configuração", function() WindowAPI:SaveConfiguration(); WindowAPI:Notify("Salvo!", "Suas configurações foram salvas.", 3) end, "Salva as configurações no seu PC")
+    ConfigTab:CreateButton("Carregar Configuração", function() WindowAPI:LoadConfiguration(); WindowAPI:Notify("Carregado!", "Suas configurações foram carregadas.", 3) end, "Carrega o arquivo salvo")
+    ConfigTab:CreateKeybind("Abrir/Fechar Menu", Enum.KeyCode.K, false, function(state) if state == true then uiVisible = not uiVisible; toggleUI(uiVisible) end end, "Fecha a UI (Efeito Buraco Negro)")
+    ConfigTab:CreateButton("Fechar Script (Unload)", function() WindowAPI:Unload() end, "Destroi a UI e limpa toda a memoria do script")
 
+    setupAntiAfk(true)
     toggleUI(true)
     return WindowAPI
 end
