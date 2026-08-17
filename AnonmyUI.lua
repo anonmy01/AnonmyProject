@@ -1,4 +1,4 @@
--- AnonmyUI V6
+-- AnonmyUI V7 (Bug das Abas Corrigido)
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
@@ -31,7 +31,6 @@ local function AddHover(btn)
     btn.MouseLeave:Connect(function() TweenService:Create(btn, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {BackgroundColor3 = Theme.Element}):Play() end)
 end
 
--- Função de Tratamento de Erros do Rayfield
 local function RunCallback(element, stroke, titleObj, origText, callback, ...)
     local args = {...}
     task.spawn(function()
@@ -80,42 +79,78 @@ function AnonmyUI:CreateWindow(config)
         end
     end)
 
-    local TabContainer = Create("Frame", { Size = UDim2.new(0, 140, 1, -50), Position = UDim2.new(0, 10, 0, 45), BackgroundColor3 = Theme.Topbar, BorderSizePixel = 0, Parent = Main })
+    -- Agora a barra de abas é um ScrollingFrame, para não cortar os botões
+    local TabContainer = Create("ScrollingFrame", { 
+        Size = UDim2.new(0, 140, 1, -50), 
+        Position = UDim2.new(0, 10, 0, 45), 
+        BackgroundColor3 = Theme.Topbar, 
+        BorderSizePixel = 0, 
+        Parent = Main, 
+        ScrollBarThickness = 0, 
+        CanvasSize = UDim2.new(0, 0, 0, 0), 
+        AutomaticCanvasSize = Enum.AutomaticSize.Y,
+        ZIndex = 2
+    })
     Create("UICorner", { CornerRadius = UDim.new(0, 8), Parent = TabContainer })
     Create("UIListLayout", { Padding = UDim.new(0, 5), Parent = TabContainer })
     Create("UIPadding", { PaddingTop = UDim.new(0, 5), Parent = TabContainer })
 
-    local ContentContainer = Create("Frame", { Size = UDim2.new(1, -160, 1, -50), Position = UDim2.new(0, 150, 0, 45), BackgroundTransparency = 1, Parent = Main })
+    local ContentContainer = Create("Frame", { Size = UDim2.new(1, -160, 1, -50), Position = UDim2.new(0, 150, 0, 45), BackgroundTransparency = 1, Parent = Main, ZIndex = 2 })
 
     local WindowAPI = {}
 
     function WindowAPI:CreateTab(name)
-        local TabBtn = Create("TextButton", { Size = UDim2.new(1, -10, 0, 30), BackgroundColor3 = Theme.Element, Text = name, TextColor3 = Theme.Text, Font = Enum.Font.Gotham, TextSize = 13, Parent = TabContainer })
+        -- Botão da aba forçado a ser visível e com ZIndex alto
+        local TabBtn = Create("TextButton", { 
+            Size = UDim2.new(1, -10, 0, 30), 
+            BackgroundColor3 = Theme.Element, 
+            Text = name, 
+            TextColor3 = Theme.Text, 
+            Font = Enum.Font.Gotham, 
+            TextSize = 13, 
+            Parent = TabContainer, 
+            AutoButtonColor = false, 
+            Visible = true, 
+            ZIndex = 3 
+        })
         Create("UICorner", { CornerRadius = UDim.new(0, 6), Parent = TabBtn })
         AddHover(TabBtn)
 
-        local Page = Create("ScrollingFrame", { Size = UDim2.new(1, 0, 1, 0), BackgroundTransparency = 1, ScrollBarThickness = 3, ScrollBarImageColor3 = Theme.Stroke, Visible = false, Parent = ContentContainer, AutomaticCanvasSize = Enum.AutomaticSize.Y, CanvasSize = UDim2.new(0,0,0,0) })
-        Create("UIListLayout", { Padding = UDim.new(0, 8), Parent = Page })
+        local Page = Create("ScrollingFrame", { 
+            Size = UDim2.new(1, 0, 1, 0), 
+            BackgroundTransparency = 1, 
+            ScrollBarThickness = 3, 
+            ScrollBarImageColor3 = Theme.Stroke, 
+            Visible = false, 
+            Parent = ContentContainer, 
+            AutomaticCanvasSize = Enum.AutomaticSize.Y, 
+            CanvasSize = UDim2.new(0,0,0,0),
+            ZIndex = 3
+        })
+        Create("UIListLayout", { Padding = UDim2.new(0, 8), Parent = Page })
         Create("UIPadding", { PaddingLeft = UDim.new(0, 5), PaddingRight = UDim.new(0, 5), PaddingTop = UDim.new(0, 5), PaddingBottom = UDim.new(0, 10), Parent = Page })
 
         TabBtn.MouseButton1Click:Connect(function()
-            for _, child in ipairs(ContentContainer:GetChildren()) do if child:IsA("ScrollingFrame") then child.Visible = false end end
+            for _, child in ipairs(ContentContainer:GetChildren()) do
+                if child:IsA("ScrollingFrame") then child.Visible = false end
+            end
             Page.Visible = true
         end)
+
         if not ContentContainer:FindFirstChild("ScrollingFrame") then Page.Visible = true end
 
         local TabAPI = {}
 
         function TabAPI:CreateToggle(text, default, callback)
             local state = default or false
-            local ToggleFrame = Create("TextButton", { Size = UDim2.new(1, -5, 0, 35), BackgroundColor3 = Theme.Element, Text = "", Parent = Page, AutoButtonColor = false })
+            local ToggleFrame = Create("TextButton", { Size = UDim2.new(1, -5, 0, 35), BackgroundColor3 = Theme.Element, Text = "", Parent = Page, AutoButtonColor = false, ZIndex = 3 })
             Create("UICorner", { CornerRadius = UDim.new(0, 6), Parent = ToggleFrame })
             AddHover(ToggleFrame)
             
-            local Title = Create("TextLabel", { Size = UDim2.new(1, -60, 1, 0), Position = UDim2.new(0, 12, 0, 0), BackgroundTransparency = 1, Text = text, TextColor3 = Theme.Text, Font = Enum.Font.Gotham, TextSize = 13, TextXAlignment = Enum.TextXAlignment.Left, Parent = ToggleFrame })
-            local Track = Create("Frame", { Size = UDim2.new(0, 40, 0, 20), Position = UDim2.new(1, -50, 0.5, -10), BackgroundColor3 = state and Theme.Accent or Color3.fromRGB(50, 50, 50), Parent = ToggleFrame })
+            local Title = Create("TextLabel", { Size = UDim2.new(1, -60, 1, 0), Position = UDim2.new(0, 12, 0, 0), BackgroundTransparency = 1, Text = text, TextColor3 = Theme.Text, Font = Enum.Font.Gotham, TextSize = 13, TextXAlignment = Enum.TextXAlignment.Left, Parent = ToggleFrame, ZIndex = 4 })
+            local Track = Create("Frame", { Size = UDim2.new(0, 40, 0, 20), Position = UDim2.new(1, -50, 0.5, -10), BackgroundColor3 = state and Theme.Accent or Color3.fromRGB(50, 50, 50), Parent = ToggleFrame, ZIndex = 4 })
             Create("UICorner", { CornerRadius = UDim.new(1, 0), Parent = Track })
-            local Knob = Create("Frame", { Size = UDim2.new(0, 16, 0, 16), Position = state and UDim2.new(1, -18, 0.5, -8) or UDim2.new(0, 2, 0.5, -8), BackgroundColor3 = Color3.fromRGB(255, 255, 255), Parent = Track })
+            local Knob = Create("Frame", { Size = UDim2.new(0, 16, 0, 16), Position = state and UDim2.new(1, -18, 0.5, -8) or UDim2.new(0, 2, 0.5, -8), BackgroundColor3 = Color3.fromRGB(255, 255, 255), Parent = Track, ZIndex = 5 })
             Create("UICorner", { CornerRadius = UDim.new(1, 0), Parent = Knob })
 
             ToggleFrame.MouseButton1Click:Connect(function()
@@ -127,7 +162,7 @@ function AnonmyUI:CreateWindow(config)
         end
 
         function TabAPI:CreateButton(text, callback)
-            local Btn = Create("TextButton", { Size = UDim2.new(1, -5, 0, 35), BackgroundColor3 = Theme.Element, Text = text, TextColor3 = Theme.Text, Font = Enum.Font.Gotham, TextSize = 13, Parent = Page, AutoButtonColor = false })
+            local Btn = Create("TextButton", { Size = UDim2.new(1, -5, 0, 35), BackgroundColor3 = Theme.Element, Text = text, TextColor3 = Theme.Text, Font = Enum.Font.Gotham, TextSize = 13, Parent = Page, AutoButtonColor = false, ZIndex = 3 })
             local Stroke = Create("UIStroke", { Color = Theme.Stroke, Transparency = 0, Parent = Btn })
             Create("UICorner", { CornerRadius = UDim.new(0, 6), Parent = Btn })
             AddHover(Btn)
@@ -139,22 +174,21 @@ function AnonmyUI:CreateWindow(config)
         end
 
         function TabAPI:CreateSlider(text, min, max, increment, default, callback)
-            local SliderFrame = Create("Frame", { Size = UDim2.new(1, -5, 0, 45), BackgroundColor3 = Theme.Element, Parent = Page })
+            local SliderFrame = Create("Frame", { Size = UDim2.new(1, -5, 0, 45), BackgroundColor3 = Theme.Element, Parent = Page, ZIndex = 3 })
             Create("UICorner", { CornerRadius = UDim.new(0, 6), Parent = SliderFrame })
-            Create("TextLabel", { Size = UDim2.new(1, -60, 1, 0), Position = UDim2.new(0, 12, 0, 0), BackgroundTransparency = 1, Text = text, TextColor3 = Theme.Text, Font = Enum.Font.Gotham, TextSize = 13, TextXAlignment = Enum.TextXAlignment.Left, Parent = SliderFrame })
-            local ValueLabel = Create("TextLabel", { Size = UDim2.new(0, 50, 1, 0), Position = UDim2.new(1, -55, 0, 0), BackgroundTransparency = 1, Text = tostring(default), TextColor3 = Theme.Accent, Font = Enum.Font.GothamBold, TextSize = 13, Parent = SliderFrame })
+            Create("TextLabel", { Size = UDim2.new(1, -60, 1, 0), Position = UDim2.new(0, 12, 0, 0), BackgroundTransparency = 1, Text = text, TextColor3 = Theme.Text, Font = Enum.Font.Gotham, TextSize = 13, TextXAlignment = Enum.TextXAlignment.Left, Parent = SliderFrame, ZIndex = 4 })
+            local ValueLabel = Create("TextLabel", { Size = UDim2.new(0, 50, 1, 0), Position = UDim2.new(1, -55, 0, 0), BackgroundTransparency = 1, Text = tostring(default), TextColor3 = Theme.Accent, Font = Enum.Font.GothamBold, TextSize = 13, Parent = SliderFrame, ZIndex = 4 })
             
-            local Track = Create("Frame", { Size = UDim2.new(1, -24, 0, 6), Position = UDim2.new(0, 12, 1, -15), BackgroundColor3 = Color3.fromRGB(40, 40, 40), Parent = SliderFrame })
+            local Track = Create("Frame", { Size = UDim2.new(1, -24, 0, 6), Position = UDim2.new(0, 12, 1, -15), BackgroundColor3 = Color3.fromRGB(40, 40, 40), Parent = SliderFrame, ZIndex = 4 })
             Create("UICorner", { CornerRadius = UDim.new(1, 0), Parent = Track })
-            local Fill = Create("Frame", { Size = UDim2.new((default - min) / (max - min), 0, 1, 0), BackgroundColor3 = Theme.Accent, Parent = Track })
+            local Fill = Create("Frame", { Size = UDim2.new((default - min) / (max - min), 0, 1, 0), BackgroundColor3 = Theme.Accent, Parent = Track, ZIndex = 5 })
             Create("UICorner", { CornerRadius = UDim.new(1, 0), Parent = Fill })
-            local Knob = Create("Frame", { Size = UDim2.new(0, 14, 0, 14), Position = UDim2.new((default - min) / (max - min), -4, 0.5, -7), BackgroundColor3 = Color3.fromRGB(255, 255, 255), Parent = Track })
+            local Knob = Create("Frame", { Size = UDim2.new(0, 14, 0, 14), Position = UDim2.new((default - min) / (max - min), -4, 0.5, -7), BackgroundColor3 = Color3.fromRGB(255, 255, 255), Parent = Track, ZIndex = 6 })
             Create("UICorner", { CornerRadius = UDim.new(1, 0), Parent = Knob })
 
             local dragging = false
             local function update(input)
                 local rel = math.clamp((input.Position.X - Track.AbsolutePosition.X) / Track.AbsoluteSize.X, 0, 1)
-                -- Lógica de Increment do Rayfield
                 local raw = min + (max - min) * rel
                 local val = math.floor(raw / increment + 0.5) * (increment * 10000000) / 10000000
                 val = math.clamp(val, min, max)
@@ -172,10 +206,10 @@ function AnonmyUI:CreateWindow(config)
 
         function TabAPI:CreateDropdown(text, options, default, multiSelect, callback)
             local selected = default or (multiSelect and {} or options[1])
-            local DropdownFrame = Create("Frame", { Size = UDim2.new(1, -5, 0, 35), BackgroundColor3 = Theme.Element, Parent = Page })
+            local DropdownFrame = Create("Frame", { Size = UDim2.new(1, -5, 0, 35), BackgroundColor3 = Theme.Element, Parent = Page, ZIndex = 3 })
             Create("UICorner", { CornerRadius = UDim.new(0, 6), Parent = DropdownFrame })
-            Create("TextLabel", { Size = UDim2.new(1, -100, 1, 0), Position = UDim2.new(0, 12, 0, 0), BackgroundTransparency = 1, Text = text, TextColor3 = Theme.Text, Font = Enum.Font.Gotham, TextSize = 13, TextXAlignment = Enum.TextXAlignment.Left, Parent = DropdownFrame })
-            local ValueLabel = Create("TextLabel", { Size = UDim2.new(0, 80, 1, 0), Position = UDim2.new(1, -90, 0, 0), BackgroundTransparency = 1, Text = tostring(selected), TextColor3 = Theme.Accent, Font = Enum.Font.GothamBold, TextSize = 12, TextXAlignment = Enum.TextXAlignment.Right, Parent = DropdownFrame })
+            Create("TextLabel", { Size = UDim2.new(1, -100, 1, 0), Position = UDim2.new(0, 12, 0, 0), BackgroundTransparency = 1, Text = text, TextColor3 = Theme.Text, Font = Enum.Font.Gotham, TextSize = 13, TextXAlignment = Enum.TextXAlignment.Left, Parent = DropdownFrame, ZIndex = 4 })
+            local ValueLabel = Create("TextLabel", { Size = UDim2.new(0, 80, 1, 0), Position = UDim2.new(1, -90, 0, 0), BackgroundTransparency = 1, Text = tostring(selected), TextColor3 = Theme.Accent, Font = Enum.Font.GothamBold, TextSize = 12, TextXAlignment = Enum.TextXAlignment.Right, Parent = DropdownFrame, ZIndex = 4 })
             
             local ListFrame = Create("Frame", { Size = UDim2.new(1, 0, 0, 0), Position = UDim2.new(0, 0, 1, 5), BackgroundColor3 = Theme.Topbar, Visible = false, ZIndex = 10, Parent = DropdownFrame })
             Create("UICorner", { CornerRadius = UDim.new(0, 6), Parent = ListFrame })
@@ -221,16 +255,16 @@ function AnonmyUI:CreateWindow(config)
 
         function TabAPI:CreateKeybind(text, default, holdToInteract, callback)
             local currentKey = default or Enum.KeyCode.Unknown
-            local KeyFrame = Create("Frame", { Size = UDim2.new(1, -5, 0, 35), BackgroundColor3 = Theme.Element, Parent = Page })
+            local KeyFrame = Create("Frame", { Size = UDim2.new(1, -5, 0, 35), BackgroundColor3 = Theme.Element, Parent = Page, ZIndex = 3 })
             Create("UICorner", { CornerRadius = UDim.new(0, 6), Parent = KeyFrame })
-            Create("TextLabel", { Size = UDim2.new(1, -60, 1, 0), Position = UDim2.new(0, 12, 0, 0), BackgroundTransparency = 1, Text = text, TextColor3 = Theme.Text, Font = Enum.Font.Gotham, TextSize = 13, TextXAlignment = Enum.TextXAlignment.Left, Parent = KeyFrame })
+            Create("TextLabel", { Size = UDim2.new(1, -60, 1, 0), Position = UDim2.new(0, 12, 0, 0), BackgroundTransparency = 1, Text = text, TextColor3 = Theme.Text, Font = Enum.Font.Gotham, TextSize = 13, TextXAlignment = Enum.TextXAlignment.Left, Parent = KeyFrame, ZIndex = 4 })
             
-            local KeyLabel = Create("TextLabel", { Size = UDim2.new(0, 45, 0, 25), Position = UDim2.new(1, -50, 0.5, -12.5), BackgroundColor3 = Color3.fromRGB(40, 40, 50), Text = currentKey.Name, TextColor3 = Theme.Accent, Font = Enum.Font.GothamBold, TextSize = 11, Parent = KeyFrame })
+            local KeyLabel = Create("TextLabel", { Size = UDim2.new(0, 45, 0, 25), Position = UDim2.new(1, -50, 0.5, -12.5), BackgroundColor3 = Color3.fromRGB(40, 40, 50), Text = currentKey.Name, TextColor3 = Theme.Accent, Font = Enum.Font.GothamBold, TextSize = 11, Parent = KeyFrame, ZIndex = 4 })
             Create("UICorner", { CornerRadius = UDim.new(0, 4), Parent = KeyLabel })
             
             local waiting = false
             local holding = false
-            local Btn = Create("TextButton", { Size = UDim2.new(1, 0, 1, 0), BackgroundTransparency = 1, Text = "", Parent = KeyFrame, AutoButtonColor = false })
+            local Btn = Create("TextButton", { Size = UDim2.new(1, 0, 1, 0), BackgroundTransparency = 1, Text = "", Parent = KeyFrame, AutoButtonColor = false, ZIndex = 5 })
             AddHover(KeyFrame)
             
             Btn.MouseButton1Click:Connect(function()
@@ -278,7 +312,9 @@ function AnonmyUI:CreateWindow(config)
         return TabAPI
     end
 
-    -- CONFIG TAB
+    -- ==========================================
+    -- SISTEMA DE CONFIGURAÇÕES
+    -- ==========================================
     local ConfigTab = WindowAPI:CreateTab("Config UI")
     local neonEnabled = false
     local currentRGB = {R = 0, G = 255, B = 200}
