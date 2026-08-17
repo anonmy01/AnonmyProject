@@ -1,4 +1,4 @@
--- AnonmyUI V10 (Definitiva)
+-- AnonmyUI V11 (Animações Fluidas e Efeitos Visuais)
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
@@ -44,9 +44,11 @@ local function CreatePadding(parent, l, r, t, b)
     return pad
 end
 
+-- Hover mais responsivo
 local function AddHover(btn)
-    btn.MouseEnter:Connect(function() TweenService:Create(btn, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {BackgroundColor3 = Theme.ElementHover}):Play() end)
-    btn.MouseLeave:Connect(function() TweenService:Create(btn, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {BackgroundColor3 = Theme.Element}):Play() end)
+    local hoverTween = TweenInfo.new(0.3, Enum.EasingStyle.Quint, Enum.EasingDirection.Out)
+    btn.MouseEnter:Connect(function() TweenService:Create(btn, hoverTween, {BackgroundColor3 = Theme.ElementHover}):Play() end)
+    btn.MouseLeave:Connect(function() TweenService:Create(btn, hoverTween, {BackgroundColor3 = Theme.Element}):Play() end)
 end
 
 local function RunCallback(element, stroke, titleObj, origText, callback, ...)
@@ -71,7 +73,8 @@ function AnonmyUI:CreateWindow(config)
     pcall(function() ScreenGui.Parent = CoreGui end)
     if not ScreenGui.Parent then ScreenGui.Parent = Players.LocalPlayer:WaitForChild("PlayerGui") end
 
-    local Main = Create("Frame", { Size = UDim2.new(0, 500, 0, 350), Position = UDim2.new(0.5, -250, 0.5, -175), BackgroundColor3 = Theme.Background, BorderSizePixel = 0, Parent = ScreenGui })
+    -- Adicionado ClipsDescendants para as animações de Slide não vazarem
+    local Main = Create("Frame", { Size = UDim2.new(0, 500, 0, 350), Position = UDim2.new(0.5, -250, 0.5, -175), BackgroundColor3 = Theme.Background, BorderSizePixel = 0, Parent = ScreenGui, ClipsDescendants = true })
     Create("UICorner", { CornerRadius = UDim.new(0, 10), Parent = Main })
     local MainStroke = Create("UIStroke", { Color = Theme.Stroke, Thickness = 1, Parent = Main })
     table.insert(UIReferences.Strokes, MainStroke)
@@ -83,6 +86,7 @@ function AnonmyUI:CreateWindow(config)
     local Title = Create("TextLabel", { Size = UDim2.new(1, -20, 1, 0), Position = UDim2.new(0, 15, 0, 0), BackgroundTransparency = 1, Text = config.Name or "AnonmyUI", TextColor3 = Theme.Accent, Font = Enum.Font.GothamBold, TextSize = 15, TextXAlignment = Enum.TextXAlignment.Left, Parent = Topbar })
     table.insert(UIReferences.Accents, Title)
 
+    -- Lógica de Arraste
     local dragging, dragStart, startPos
     Topbar.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
@@ -97,12 +101,18 @@ function AnonmyUI:CreateWindow(config)
         end
     end)
 
+    -- Animação de Pop-In (Abertura)
+    Main.Size = UDim2.new(0, 500, 0, 0)
+    Main.Visible = true
+    TweenService:Create(Main, TweenInfo.new(0.6, Enum.EasingStyle.Exponential, Enum.EasingDirection.Out), {Size = UDim2.new(0, 500, 0, 350)}):Play()
+
     local TabContainer = Create("ScrollingFrame", { Size = UDim2.new(0, 140, 1, -50), Position = UDim2.new(0, 10, 0, 45), BackgroundColor3 = Theme.Topbar, BorderSizePixel = 0, Parent = Main, ScrollBarThickness = 0, CanvasSize = UDim2.new(0, 0, 0, 0), AutomaticCanvasSize = Enum.AutomaticSize.Y, ZIndex = 2 })
     Create("UICorner", { CornerRadius = UDim.new(0, 8), Parent = TabContainer })
     CreateListLayout(TabContainer, 5)
     CreatePadding(TabContainer, 0, 0, 5, 0)
 
-    local ContentContainer = Create("Frame", { Size = UDim2.new(1, -160, 1, -50), Position = UDim2.new(0, 150, 0, 45), BackgroundTransparency = 1, Parent = Main, ZIndex = 2 })
+    -- ContentContainer agora corta o que sai dele (para o Slide)
+    local ContentContainer = Create("Frame", { Size = UDim2.new(1, -160, 1, -50), Position = UDim2.new(0, 150, 0, 45), BackgroundTransparency = 1, Parent = Main, ZIndex = 2, ClipsDescendants = true })
 
     local WindowAPI = {}
 
@@ -111,15 +121,22 @@ function AnonmyUI:CreateWindow(config)
         Create("UICorner", { CornerRadius = UDim.new(0, 6), Parent = TabBtn })
         AddHover(TabBtn)
 
-        local Page = Create("ScrollingFrame", { Size = UDim2.new(1, 0, 1, 0), BackgroundTransparency = 1, ScrollBarThickness = 3, ScrollBarImageColor3 = Theme.Stroke, Visible = false, Parent = ContentContainer, AutomaticCanvasSize = Enum.AutomaticSize.Y, CanvasSize = UDim2.new(0,0,0,0), ZIndex = 3 })
+        local Page = Create("ScrollingFrame", { Size = UDim2.new(1, 0, 1, 0), BackgroundTransparency = 1, ScrollBarThickness = 3, ScrollBarImageColor3 = Theme.Stroke, Visible = false, Parent = ContentContainer, AutomaticCanvasSize = Enum.AutomaticSize.Y, CanvasSize = UDim2.new(0,0,0,0), ZIndex = 3, ClipsDescendants = true })
         CreateListLayout(Page, 8)
         CreatePadding(Page, 5, 5, 5, 10)
 
+        -- Lógica de Troca de Aba com Slide (Animação)
         TabBtn.MouseButton1Click:Connect(function()
             for _, child in ipairs(ContentContainer:GetChildren()) do
-                if child:IsA("ScrollingFrame") then child.Visible = false end
+                if child:IsA("ScrollingFrame") and child.Visible then
+                    TweenService:Create(child, TweenInfo.new(0.2, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {Position = UDim2.new(0, -30, 0, 0)}):Play()
+                    task.delay(0.2, function() child.Visible = false; child.Position = UDim2.new(0, 0, 0, 0) end)
+                end
             end
+            if Page.Visible then return end
+            Page.Position = UDim2.new(0, 30, 0, 0)
             Page.Visible = true
+            TweenService:Create(Page, TweenInfo.new(0.3, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {Position = UDim2.new(0, 0, 0, 0)}):Play()
         end)
 
         if not ContentContainer:FindFirstChild("ScrollingFrame") then Page.Visible = true end
@@ -138,8 +155,8 @@ function AnonmyUI:CreateWindow(config)
             Create("UICorner", { CornerRadius = UDim.new(1, 0), Parent = Knob })
             ToggleFrame.MouseButton1Click:Connect(function()
                 state = not state
-                TweenService:Create(Track, TweenInfo.new(0.2), {BackgroundColor3 = state and Theme.Accent or Color3.fromRGB(50, 50, 50)}):Play()
-                TweenService:Create(Knob, TweenInfo.new(0.2), {Position = state and UDim2.new(1, -18, 0.5, -8) or UDim2.new(0, 2, 0.5, -8)}):Play()
+                TweenService:Create(Track, TweenInfo.new(0.3, Enum.EasingStyle.Quint), {BackgroundColor3 = state and Theme.Accent or Color3.fromRGB(50, 50, 50)}):Play()
+                TweenService:Create(Knob, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Position = state and UDim2.new(1, -18, 0.5, -8) or UDim2.new(0, 2, 0.5, -8)}):Play()
                 RunCallback(ToggleFrame, nil, Title, text, callback, state)
             end)
         end
@@ -150,9 +167,9 @@ function AnonmyUI:CreateWindow(config)
             Create("UICorner", { CornerRadius = UDim.new(0, 6), Parent = Btn })
             AddHover(Btn)
             Btn.MouseButton1Click:Connect(function()
-                TweenService:Create(Btn, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {BackgroundColor3 = Theme.ElementHover}):Play()
+                TweenService:Create(Btn, TweenInfo.new(0.2, Enum.EasingStyle.Exponential), {BackgroundColor3 = Theme.ElementHover}):Play()
                 RunCallback(Btn, Stroke, Btn, text, callback)
-                task.delay(0.2, function() TweenService:Create(Btn, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {BackgroundColor3 = Theme.Element}):Play() end)
+                task.delay(0.2, function() TweenService:Create(Btn, TweenInfo.new(0.4, Enum.EasingStyle.Exponential), {BackgroundColor3 = Theme.Element}):Play() end)
             end)
             return Btn
         end
@@ -168,15 +185,23 @@ function AnonmyUI:CreateWindow(config)
             Create("UICorner", { CornerRadius = UDim.new(1, 0), Parent = Fill })
             local Knob = Create("Frame", { Size = UDim2.new(0, 14, 0, 14), Position = UDim2.new((default - min) / (max - min), -4, 0.5, -7), BackgroundColor3 = Color3.fromRGB(255, 255, 255), Parent = Track, ZIndex = 6 })
             Create("UICorner", { CornerRadius = UDim.new(1, 0), Parent = Knob })
+            
             local dragging = false
+            local dragTweenInfo = TweenInfo.new(0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+            
             local function update(input)
                 local rel = math.clamp((input.Position.X - Track.AbsolutePosition.X) / Track.AbsoluteSize.X, 0, 1)
                 local raw = min + (max - min) * rel
                 local val = math.floor(raw / increment + 0.5) * (increment * 10000000) / 10000000
                 val = math.clamp(val, min, max)
-                Fill.Size = UDim2.new(rel, 0, 1, 0); Knob.Position = UDim2.new(rel, -7, 0.5, -7); ValueLabel.Text = tostring(val)
+                
+                -- Animação de arrasto fluido
+                TweenService:Create(Fill, dragTweenInfo, {Size = UDim2.new(rel, 0, 1, 0)}):Play()
+                TweenService:Create(Knob, dragTweenInfo, {Position = UDim2.new(rel, -7, 0.5, -7)}):Play()
+                ValueLabel.Text = tostring(val)
                 callback(val)
             end
+
             Track.InputBegan:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = true update(input) end end)
             UserInputService.InputEnded:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end end)
             UserInputService.InputChanged:Connect(function(input) if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then update(input) end end)
@@ -190,12 +215,19 @@ function AnonmyUI:CreateWindow(config)
             local ValueLabel = Create("TextLabel", { Size = UDim2.new(0, 80, 1, 0), Position = UDim2.new(1, -90, 0, 0), BackgroundTransparency = 1, Text = tostring(selected), TextColor3 = Theme.Accent, Font = Enum.Font.GothamBold, TextSize = 12, TextXAlignment = Enum.TextXAlignment.Right, Parent = DropdownFrame, ZIndex = 4 })
             local ListFrame = Create("Frame", { Size = UDim2.new(1, 0, 0, 0), Position = UDim2.new(0, 0, 1, 5), BackgroundColor3 = Theme.Topbar, Visible = false, ZIndex = 10, Parent = DropdownFrame })
             Create("UICorner", { CornerRadius = UDim.new(0, 6), Parent = ListFrame })
-            CreateListLayout(ListFrame, 2); CreatePadding(ListFrame, 0, 0, 2, 2)
+            CreateListLayout(ListFrame, 2)
+            CreatePadding(ListFrame, 0, 0, 2, 2)
             local Btn = Create("TextButton", { Size = UDim2.new(1, 0, 1, 0), BackgroundTransparency = 1, Text = "", Parent = DropdownFrame, ZIndex = 5 })
-            Btn.MouseButton1Click:Connect(function()
+            
+            local function toggleList()
                 ListFrame.Visible = not ListFrame.Visible
-                DropdownFrame.Size = ListFrame.Visible and UDim2.new(1, -5, 0, 35 + (#options * 30) + 5) or UDim2.new(1, -5, 0, 35)
-            end)
+                local targetSize = ListFrame.Visible and UDim2.new(1, -5, 0, 35 + (#options * 30) + 5) or UDim2.new(1, -5, 0, 35)
+                -- Animação suave ao abrir/fechar lista
+                TweenService:Create(DropdownFrame, TweenInfo.new(0.3, Enum.EasingStyle.Exponential, Enum.EasingDirection.Out), {Size = targetSize}):Play()
+            end
+            
+            Btn.MouseButton1Click:Connect(toggleList)
+
             local function updateText()
                 if multiSelect then
                     if #selected == 0 then ValueLabel.Text = "None"
@@ -204,6 +236,7 @@ function AnonmyUI:CreateWindow(config)
                 else ValueLabel.Text = tostring(selected) end
             end
             updateText()
+
             for _, opt in ipairs(options) do
                 local OptBtn = Create("TextButton", { Size = UDim2.new(1, -4, 0, 28), BackgroundColor3 = Theme.Element, Text = opt, TextColor3 = Theme.Text, Font = Enum.Font.Gotham, TextSize = 12, Parent = ListFrame, ZIndex = 11 })
                 Create("UICorner", { CornerRadius = UDim.new(0, 4), Parent = OptBtn })
@@ -214,8 +247,8 @@ function AnonmyUI:CreateWindow(config)
                         if idx then table.remove(selected, idx) else table.insert(selected, opt) end
                         updateText()
                     else
-                        selected = opt; updateText(); ListFrame.Visible = false
-                        DropdownFrame.Size = UDim2.new(1, -5, 0, 35)
+                        selected = opt; updateText()
+                        toggleList() -- Fecha suavemente
                     end
                     callback(selected)
                 end)
@@ -244,24 +277,13 @@ function AnonmyUI:CreateWindow(config)
                 elseif input.KeyCode == currentKey and currentKey ~= Enum.KeyCode.Unknown then
                     if not isTyping then
                         holding = true
-                        if not holdToInteract then
-                            if callback then callback(true) end
-                        else
-                            task.spawn(function()
-                                while holding do
-                                    if callback then callback(true) end
-                                    RunService.RenderStepped:Wait()
-                                end
-                            end)
-                        end
+                        if not holdToInteract then if callback then callback(true) end
+                        else task.spawn(function() while holding do if callback then callback(true) end RunService.RenderStepped:Wait() end end) end
                     end
                 end
             end)
             UserInputService.InputEnded:Connect(function(input)
-                if input.KeyCode == currentKey and holding then
-                    holding = false
-                    if holdToInteract and callback then callback(false) end
-                end
+                if input.KeyCode == currentKey and holding then holding = false; if holdToInteract and callback then callback(false) end end
             end)
         end
 
