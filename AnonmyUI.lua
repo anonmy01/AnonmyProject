@@ -1,4 +1,4 @@
--- AnonmyUI V7 (Bug das Abas Corrigido)
+-- AnonmyUI V8 (Bug do Padding Corrigido)
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
@@ -6,12 +6,6 @@ local Players = game:GetService("Players")
 local CoreGui = game:GetService("CoreGui")
 
 local AnonmyUI = {}
-
-local function Create(class, props)
-    local inst = Instance.new(class)
-    for prop, val in pairs(props) do inst[prop] = val end
-    return inst
-end
 
 local Theme = {
     Accent = Color3.fromRGB(0, 255, 200),
@@ -25,6 +19,36 @@ local Theme = {
 }
 
 local UIReferences = { Accents = {}, Backgrounds = {}, Strokes = {} }
+
+local function Create(class, props)
+    local inst = Instance.new(class)
+    for prop, val in pairs(props) do
+        local success, err = pcall(function()
+            inst[prop] = val
+        end)
+        if not success then warn("AnonmyUI Error setting " .. prop .. ": " .. err) end
+    end
+    return inst
+end
+
+-- Função isolada para ListLayout (Evita o bug de UDim/UDim2)
+local function CreateListLayout(parent, pad)
+    local layout = Instance.new("UIListLayout")
+    layout.Padding = UDim.new(0, pad)
+    layout.Parent = parent
+    return layout
+end
+
+-- Função isolada para Padding
+local function CreatePadding(parent, left, right, top, bottom)
+    local pad = Instance.new("UIPadding")
+    pad.PaddingLeft = UDim.new(0, left)
+    pad.PaddingRight = UDim.new(0, right)
+    pad.PaddingTop = UDim.new(0, top)
+    pad.PaddingBottom = UDim.new(0, bottom)
+    pad.Parent = parent
+    return pad
+end
 
 local function AddHover(btn)
     btn.MouseEnter:Connect(function() TweenService:Create(btn, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {BackgroundColor3 = Theme.ElementHover}):Play() end)
@@ -79,56 +103,36 @@ function AnonmyUI:CreateWindow(config)
         end
     end)
 
-    -- Agora a barra de abas é um ScrollingFrame, para não cortar os botões
     local TabContainer = Create("ScrollingFrame", { 
-        Size = UDim2.new(0, 140, 1, -50), 
-        Position = UDim2.new(0, 10, 0, 45), 
-        BackgroundColor3 = Theme.Topbar, 
-        BorderSizePixel = 0, 
-        Parent = Main, 
-        ScrollBarThickness = 0, 
-        CanvasSize = UDim2.new(0, 0, 0, 0), 
-        AutomaticCanvasSize = Enum.AutomaticSize.Y,
-        ZIndex = 2
+        Size = UDim2.new(0, 140, 1, -50), Position = UDim2.new(0, 10, 0, 45), 
+        BackgroundColor3 = Theme.Topbar, BorderSizePixel = 0, Parent = Main, 
+        ScrollBarThickness = 0, CanvasSize = UDim2.new(0, 0, 0, 0), 
+        AutomaticCanvasSize = Enum.AutomaticSize.Y, ZIndex = 2
     })
     Create("UICorner", { CornerRadius = UDim.new(0, 8), Parent = TabContainer })
-    Create("UIListLayout", { Padding = UDim.new(0, 5), Parent = TabContainer })
-    Create("UIPadding", { PaddingTop = UDim.new(0, 5), Parent = TabContainer })
+    CreateListLayout(TabContainer, 5)
+    CreatePadding(TabContainer, 0, 0, 5, 0)
 
     local ContentContainer = Create("Frame", { Size = UDim2.new(1, -160, 1, -50), Position = UDim2.new(0, 150, 0, 45), BackgroundTransparency = 1, Parent = Main, ZIndex = 2 })
 
     local WindowAPI = {}
 
     function WindowAPI:CreateTab(name)
-        -- Botão da aba forçado a ser visível e com ZIndex alto
         local TabBtn = Create("TextButton", { 
-            Size = UDim2.new(1, -10, 0, 30), 
-            BackgroundColor3 = Theme.Element, 
-            Text = name, 
-            TextColor3 = Theme.Text, 
-            Font = Enum.Font.Gotham, 
-            TextSize = 13, 
-            Parent = TabContainer, 
-            AutoButtonColor = false, 
-            Visible = true, 
-            ZIndex = 3 
+            Size = UDim2.new(1, -10, 0, 30), BackgroundColor3 = Theme.Element, Text = name, 
+            TextColor3 = Theme.Text, Font = Enum.Font.Gotham, TextSize = 13, Parent = TabContainer, 
+            AutoButtonColor = false, Visible = true, ZIndex = 3 
         })
         Create("UICorner", { CornerRadius = UDim.new(0, 6), Parent = TabBtn })
         AddHover(TabBtn)
 
         local Page = Create("ScrollingFrame", { 
-            Size = UDim2.new(1, 0, 1, 0), 
-            BackgroundTransparency = 1, 
-            ScrollBarThickness = 3, 
-            ScrollBarImageColor3 = Theme.Stroke, 
-            Visible = false, 
-            Parent = ContentContainer, 
-            AutomaticCanvasSize = Enum.AutomaticSize.Y, 
-            CanvasSize = UDim2.new(0,0,0,0),
-            ZIndex = 3
+            Size = UDim2.new(1, 0, 1, 0), BackgroundTransparency = 1, ScrollBarThickness = 3, 
+            ScrollBarImageColor3 = Theme.Stroke, Visible = false, Parent = ContentContainer, 
+            AutomaticCanvasSize = Enum.AutomaticSize.Y, CanvasSize = UDim2.new(0,0,0,0), ZIndex = 3
         })
-        Create("UIListLayout", { Padding = UDim2.new(0, 8), Parent = Page })
-        Create("UIPadding", { PaddingLeft = UDim.new(0, 5), PaddingRight = UDim.new(0, 5), PaddingTop = UDim.new(0, 5), PaddingBottom = UDim.new(0, 10), Parent = Page })
+        CreateListLayout(Page, 8)
+        CreatePadding(Page, 5, 5, 5, 10)
 
         TabBtn.MouseButton1Click:Connect(function()
             for _, child in ipairs(ContentContainer:GetChildren()) do
@@ -213,8 +217,8 @@ function AnonmyUI:CreateWindow(config)
             
             local ListFrame = Create("Frame", { Size = UDim2.new(1, 0, 0, 0), Position = UDim2.new(0, 0, 1, 5), BackgroundColor3 = Theme.Topbar, Visible = false, ZIndex = 10, Parent = DropdownFrame })
             Create("UICorner", { CornerRadius = UDim.new(0, 6), Parent = ListFrame })
-            Create("UIListLayout", { Padding = UDim.new(0, 2), Parent = ListFrame })
-            Create("UIPadding", { PaddingTop = UDim.new(0, 2), PaddingBottom = UDim.new(0, 2), Parent = ListFrame })
+            CreateListLayout(ListFrame, 2)
+            CreatePadding(ListFrame, 0, 0, 2, 2)
 
             local Btn = Create("TextButton", { Size = UDim2.new(1, 0, 1, 0), BackgroundTransparency = 1, Text = "", Parent = DropdownFrame, ZIndex = 5 })
             Btn.MouseButton1Click:Connect(function()
@@ -312,9 +316,7 @@ function AnonmyUI:CreateWindow(config)
         return TabAPI
     end
 
-    -- ==========================================
-    -- SISTEMA DE CONFIGURAÇÕES
-    -- ==========================================
+    -- CONFIG TAB
     local ConfigTab = WindowAPI:CreateTab("Config UI")
     local neonEnabled = false
     local currentRGB = {R = 0, G = 255, B = 200}
