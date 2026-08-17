@@ -1,11 +1,10 @@
--- AnonmyUI V16 (Blur, Gradientes, Animação de Clique e Scrollbar)
+-- AnonmyUI V17 (Blur Removido + Notificações, Parágrafos, Progresso e Clipboard)
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local CoreGui = game:GetService("CoreGui")
-local Lighting = game:GetService("Lighting")
 
 local AnonmyUI = {}
 
@@ -31,27 +30,19 @@ local function Create(class, props)
     return inst
 end
 
--- Cria Gradiente Metálico
 local function CreateGradient(parent, c1, c2)
     local grad = Instance.new("UIGradient")
-    grad.Rotation = 90
-    grad.Color = ColorSequence.new(c1, c2)
-    grad.Parent = parent
+    grad.Rotation = 90; grad.Color = ColorSequence.new(c1, c2); grad.Parent = parent
 end
 
 local function CreateListLayout(parent, pad)
-    local layout = Instance.new("UIListLayout")
-    layout.Padding = UDim.new(0, pad)
-    layout.Parent = parent
-    return layout
+    local layout = Instance.new("UIListLayout"); layout.Padding = UDim.new(0, pad); layout.Parent = parent; return layout
 end
 
 local function CreatePadding(parent, l, r, t, b)
     local pad = Instance.new("UIPadding")
     pad.PaddingLeft = UDim.new(0, l); pad.PaddingRight = UDim.new(0, r)
-    pad.PaddingTop = UDim.new(0, t); pad.PaddingBottom = UDim.new(0, b)
-    pad.Parent = parent
-    return pad
+    pad.PaddingTop = UDim.new(0, t); pad.PaddingBottom = UDim.new(0, b); pad.Parent = parent; return pad
 end
 
 local function AddHover(btn)
@@ -82,23 +73,15 @@ function AnonmyUI:CreateWindow(config)
     pcall(function() ScreenGui.Parent = CoreGui end)
     if not ScreenGui.Parent then ScreenGui.Parent = Players.LocalPlayer:WaitForChild("PlayerGui") end
 
-    -- Background Blur (Desfoque de Fundo)
-    local BlurEffect = Create("BlurEffect", { Name = "AnonmyBlur", Size = 0, Parent = Lighting })
+    -- Container de Notificações (Toasts)
+    local ToastContainer = Create("Frame", { Size = UDim2.new(0, 300, 1, 0), Position = UDim2.new(1, -310, 0, 10), BackgroundTransparency = 1, Parent = ScreenGui, ZIndex = 1000 })
+    CreateListLayout(ToastContainer, 10).VerticalAlignment = Enum.VerticalAlignment.Bottom
 
-    local Shadow = Create("ImageLabel", {
-        Name = "Shadow", AnchorPoint = Vector2.new(0.5, 0.5), Size = UDim2.new(0, 530, 0, 380),
-        Position = UDim2.new(0.5, 0, 0.5, 0), BackgroundTransparency = 1, Image = "rbxassetid://6014261993",
-        ImageColor3 = Color3.fromRGB(0, 0, 0), ImageTransparency = 0.5, ScaleType = Enum.ScaleType.Slice,
-        SliceCenter = Rect.new(30, 30, 30, 30), Parent = ScreenGui, ZIndex = 0
-    })
+    local Shadow = Create("ImageLabel", { Name = "Shadow", AnchorPoint = Vector2.new(0.5, 0.5), Size = UDim2.new(0, 530, 0, 380), Position = UDim2.new(0.5, 0, 0.5, 0), BackgroundTransparency = 1, Image = "rbxassetid://6014261993", ImageColor3 = Color3.fromRGB(0, 0, 0), ImageTransparency = 0.5, ScaleType = Enum.ScaleType.Slice, SliceCenter = Rect.new(30, 30, 30, 30), Parent = ScreenGui, ZIndex = 0 })
 
-    local Main = Create("Frame", { 
-        Size = UDim2.new(0, 500, 0, 350), Position = UDim2.new(0.5, 0, 0.5, 0), 
-        AnchorPoint = Vector2.new(0.5, 0.5), BackgroundColor3 = Theme.Background, 
-        BorderSizePixel = 0, Parent = ScreenGui, ClipsDescendants = true 
-    })
+    local Main = Create("Frame", { Size = UDim2.new(0, 500, 0, 350), Position = UDim2.new(0.5, 0, 0.5, 0), AnchorPoint = Vector2.new(0.5, 0.5), BackgroundColor3 = Theme.Background, BorderSizePixel = 0, Parent = ScreenGui, ClipsDescendants = true })
     Create("UICorner", { CornerRadius = UDim.new(0, 10), Parent = Main })
-    CreateGradient(Main, Color3.fromRGB(25, 25, 30), Theme.Background) -- Gradiente Metálico
+    CreateGradient(Main, Color3.fromRGB(25, 25, 30), Theme.Background)
     local MainStroke = Create("UIStroke", { Color = Theme.Stroke, Thickness = 1, Parent = Main })
     table.insert(UIReferences.Strokes, MainStroke)
 
@@ -122,41 +105,29 @@ function AnonmyUI:CreateWindow(config)
             input.Changed:Connect(function() if input.UserInputState == Enum.UserInputState.End then dragging = false end end)
         end
     end)
-    UserInputService.InputChanged:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseMovement and dragging then updateDrag(input) end
-    end)
+    UserInputService.InputChanged:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseMovement and dragging then updateDrag(input) end end)
 
-    -- Efeito Buraco Negro + Blur
-    local isAnimating = false
-    local uiVisible = true
+    local isAnimating = false; local uiVisible = true
     local function toggleUI(show)
-        if isAnimating then return end
-        isAnimating = true
+        if isAnimating then return end; isAnimating = true
         if show then
             Main.Visible = true; Shadow.Visible = true
             Main.Size = UDim2.new(0, 0, 0, 0); Main.BackgroundTransparency = 1; Shadow.ImageTransparency = 1
             local tInfo = TweenInfo.new(0.5, Enum.EasingStyle.Exponential, Enum.EasingDirection.Out)
             TweenService:Create(Main, tInfo, {Size = UDim2.new(0, 500, 0, 350), BackgroundTransparency = 0}):Play()
             TweenService:Create(Shadow, tInfo, {ImageTransparency = 0.5}):Play()
-            TweenService:Create(BlurEffect, tInfo, {Size = 15}):Play() -- Ativa o Blur
             task.delay(tInfo.Time, function() isAnimating = false end)
         else
             local tInfo = TweenInfo.new(0.4, Enum.EasingStyle.Exponential, Enum.EasingDirection.In)
             TweenService:Create(Main, tInfo, {Size = UDim2.new(0, 0, 0, 0), BackgroundTransparency = 1}):Play()
             TweenService:Create(Shadow, tInfo, {ImageTransparency = 1}):Play()
-            TweenService:Create(BlurEffect, tInfo, {Size = 0}):Play() -- Desativa o Blur
             task.delay(tInfo.Time, function() Main.Visible = false; Shadow.Visible = false; isAnimating = false end)
         end
     end
 
-    local TabContainer = Create("ScrollingFrame", { 
-        Size = UDim2.new(0, 140, 1, -50), Position = UDim2.new(0, 10, 0, 45), BackgroundColor3 = Theme.Topbar, 
-        BorderSizePixel = 0, Parent = Main, AutomaticCanvasSize = Enum.AutomaticSize.Y, ZIndex = 2, 
-        ScrollBarThickness = 3, ScrollBarImageColor3 = Theme.Accent, ScrollBarBackgroundTransparency = 1, CanvasSize = UDim2.new(0,0,0,0) 
-    })
+    local TabContainer = Create("ScrollingFrame", { Size = UDim2.new(0, 140, 1, -50), Position = UDim2.new(0, 10, 0, 45), BackgroundColor3 = Theme.Topbar, BorderSizePixel = 0, Parent = Main, AutomaticCanvasSize = Enum.AutomaticSize.Y, ZIndex = 2, ScrollBarThickness = 3, ScrollBarImageColor3 = Theme.Accent, ScrollBarBackgroundTransparency = 1, CanvasSize = UDim2.new(0,0,0,0) })
     Create("UICorner", { CornerRadius = UDim.new(0, 8), Parent = TabContainer })
-    local tabListLayout = CreateListLayout(TabContainer, 5)
-    tabListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    local tabListLayout = CreateListLayout(TabContainer, 5); tabListLayout.SortOrder = Enum.SortOrder.LayoutOrder
     CreatePadding(TabContainer, 0, 0, 5, 0)
 
     local ContentContainer = Create("Frame", { Size = UDim2.new(1, -160, 1, -50), Position = UDim2.new(0, 150, 0, 45), BackgroundTransparency = 1, Parent = Main, ZIndex = 2, ClipsDescendants = true })
@@ -166,6 +137,27 @@ function AnonmyUI:CreateWindow(config)
     local CEnabled = config.ConfigurationSaving and config.ConfigurationSaving.Enabled or false
     local CFolder = "AnonmyUI_Configs"
     local CFileName = (config.ConfigurationSaving and config.ConfigurationSaving.FileName) or "config1"
+
+    -- Função de Notificação (Toast)
+    function WindowAPI:Notify(title, content, duration)
+        duration = duration or 5
+        local Toast = Create("Frame", { Size = UDim2.new(1, 0, 0, 80), BackgroundColor3 = Theme.Background, ClipsDescendants = true, Parent = ToastContainer, ZIndex = 1001, Position = UDim2.new(1, 0, 0, 0) })
+        Create("UICorner", { CornerRadius = UDim.new(0, 8), Parent = Toast })
+        Create("UIStroke", { Color = Theme.Accent, Transparency = 0.5, Parent = Toast })
+        Create("UIListLayout", { Padding = UDim.new(0, 5), Parent = Toast })
+        Create("UIPadding", { PaddingTop = UDim.new(0, 10), PaddingBottom = UDim.new(0, 10), PaddingLeft = UDim.new(0, 15), PaddingRight = UDim.new(0, 15), Parent = Toast })
+        local TitleLabel = Create("TextLabel", { Text = title, TextColor3 = Theme.Accent, Font = Enum.Font.GothamBold, TextSize = 14, BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 20), TextXAlignment = Enum.TextXAlignment.Left, Parent = Toast })
+        local ContentLabel = Create("TextLabel", { Text = content, TextColor3 = Theme.Text, Font = Enum.Font.Gotham, TextSize = 13, BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 40), TextWrapped = true, TextYAlignment = Enum.TextYAlignment.Top, Parent = Toast })
+        table.insert(UIReferences.Accents, TitleLabel)
+        
+        Toast.Position = UDim2.new(1, 0, 0, 0)
+        TweenService:Create(Toast, TweenInfo.new(0.5, Enum.EasingStyle.Exponential, Enum.EasingDirection.Out), {Position = UDim2.new(0, 0, 0, 0)}):Play()
+        
+        task.delay(duration, function()
+            local t = TweenService:Create(Toast, TweenInfo.new(0.5, Enum.EasingStyle.Exponential, Enum.EasingDirection.In), {Position = UDim2.new(1, 300, 0, 0)})
+            t:Play(); t.Completed:Wait(); Toast:Destroy()
+        end)
+    end
 
     function WindowAPI:SaveConfiguration()
         if not CEnabled or not writefile then return end
@@ -189,12 +181,7 @@ function AnonmyUI:CreateWindow(config)
     function WindowAPI:CreateTab(name, order)
         local TabBtn = Create("TextButton", { Size = UDim2.new(1, -10, 0, 30), BackgroundColor3 = Theme.Element, Text = name, TextColor3 = Theme.Text, Font = Enum.Font.Gotham, TextSize = 13, Parent = TabContainer, AutoButtonColor = false, Visible = true, ZIndex = 3, LayoutOrder = order or 0 })
         Create("UICorner", { CornerRadius = UDim.new(0, 6), Parent = TabBtn }); AddHover(TabBtn)
-        
-        local Page = Create("ScrollingFrame", { 
-            Size = UDim2.new(1, 0, 1, 0), BackgroundTransparency = 1, Visible = false, Parent = ContentContainer, 
-            AutomaticCanvasSize = Enum.AutomaticSize.Y, ZIndex = 3, ClipsDescendants = true, 
-            ScrollBarThickness = 3, ScrollBarImageColor3 = Theme.Accent, ScrollBarBackgroundTransparency = 1, CanvasSize = UDim2.new(0,0,0,0) 
-        })
+        local Page = Create("ScrollingFrame", { Size = UDim2.new(1, 0, 1, 0), BackgroundTransparency = 1, Visible = false, Parent = ContentContainer, AutomaticCanvasSize = Enum.AutomaticSize.Y, ZIndex = 3, ClipsDescendants = true, ScrollBarThickness = 3, ScrollBarImageColor3 = Theme.Accent, ScrollBarBackgroundTransparency = 1, CanvasSize = UDim2.new(0,0,0,0) })
         CreateListLayout(Page, 8); CreatePadding(Page, 5, 5, 5, 10)
 
         TabBtn.MouseButton1Click:Connect(function()
@@ -220,6 +207,59 @@ function AnonmyUI:CreateWindow(config)
             table.insert(UIReferences.Accents, Label)
         end
 
+        -- NOVO: Parágrafo / Label
+        function TabAPI:CreateParagraph(title, content)
+            local Frame = Create("Frame", { Size = UDim2.new(1, -5, 0, 60), BackgroundColor3 = Theme.Element, Parent = Page, ZIndex = 3, AutomaticSize = Enum.AutomaticSize.Y })
+            Create("UICorner", { CornerRadius = UDim.new(0, 6), Parent = Frame })
+            CreateListLayout(Frame, 5)
+            CreatePadding(Frame, 12, 12, 8, 8)
+            local TitleLabel = Create("TextLabel", { Text = title, TextColor3 = Theme.Accent, Font = Enum.Font.GothamBold, TextSize = 13, BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 20), TextXAlignment = Enum.TextXAlignment.Left, Parent = Frame, ZIndex = 4 })
+            local ContentLabel = Create("TextLabel", { Text = content, TextColor3 = Theme.Text, Font = Enum.Font.Gotham, TextSize = 12, BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 20), TextWrapped = true, AutomaticSize = Enum.AutomaticSize.Y, TextYAlignment = Enum.TextYAlignment.Top, Parent = Frame, ZIndex = 4 })
+            table.insert(UIReferences.Accents, TitleLabel)
+        end
+
+        -- NOVO: Barra de Progresso
+        function TabAPI:CreateProgressBar(text)
+            local Frame = Create("Frame", { Size = UDim2.new(1, -5, 0, 45), BackgroundColor3 = Theme.Element, Parent = Page, ZIndex = 3 })
+            Create("UICorner", { CornerRadius = UDim.new(0, 6), Parent = Frame })
+            Create("TextLabel", { Size = UDim2.new(1, -40, 1, 0), Position = UDim2.new(0, 12, 0, 0), BackgroundTransparency = 1, Text = text, TextColor3 = Theme.Text, Font = Enum.Font.Gotham, TextSize = 13, TextXAlignment = Enum.TextXAlignment.Left, Parent = Frame, ZIndex = 4 })
+            local ValueLabel = Create("TextLabel", { Size = UDim2.new(0, 40, 1, 0), Position = UDim2.new(1, -45, 0, 0), BackgroundTransparency = 1, Text = "0%", TextColor3 = Theme.Accent, Font = Enum.Font.GothamBold, TextSize = 13, Parent = Frame, ZIndex = 4 })
+            local Track = Create("Frame", { Size = UDim2.new(1, -24, 0, 6), Position = UDim2.new(0, 12, 1, -15), BackgroundColor3 = Color3.fromRGB(40, 40, 40), Parent = Frame, ZIndex = 4 })
+            Create("UICorner", { CornerRadius = UDim.new(1, 0), Parent = Track })
+            local Fill = Create("Frame", { Size = UDim2.new(0, 0, 1, 0), BackgroundColor3 = Theme.Accent, Parent = Track, ZIndex = 5 })
+            Create("UICorner", { CornerRadius = UDim.new(1, 0), Parent = Fill })
+            
+            local ProgressObj = {
+                Set = function(val)
+                    val = math.clamp(val, 0, 100)
+                    ValueLabel.Text = tostring(val) .. "%"
+                    TweenService:Create(Fill, TweenInfo.new(0.3, Enum.EasingStyle.Quint), {Size = UDim2.new(val/100, 0, 1, 0)}):Play()
+                end
+            }
+            return ProgressObj
+        end
+
+        -- NOVO: Botão de Copiar (Clipboard)
+        function TabAPI:CreateCopyButton(text, value)
+            local Frame = Create("Frame", { Size = UDim2.new(1, -5, 0, 35), BackgroundColor3 = Theme.Element, Parent = Page, ZIndex = 3 })
+            Create("UICorner", { CornerRadius = UDim.new(0, 6), Parent = Frame })
+            Create("TextLabel", { Size = UDim2.new(1, -120, 1, 0), Position = UDim2.new(0, 12, 0, 0), BackgroundTransparency = 1, Text = text, TextColor3 = Theme.Text, Font = Enum.Font.Gotham, TextSize = 13, TextXAlignment = Enum.TextXAlignment.Left, Parent = Frame, ZIndex = 4 })
+            local Box = Create("Frame", { Size = UDim2.new(0, 60, 0, 25), Position = UDim2.new(1, -130, 0.5, -12.5), BackgroundColor3 = Color3.fromRGB(40, 40, 50), Parent = Frame, ZIndex = 4 })
+            Create("UICorner", { CornerRadius = UDim.new(0, 4), Parent = Box })
+            Create("TextLabel", { Size = UDim2.new(1, -10, 1, 0), Position = UDim2.new(0, 5, 0, 0), BackgroundTransparency = 1, Text = value, TextColor3 = Theme.Accent, Font = Enum.Font.GothamBold, TextSize = 11, TextXAlignment = Enum.TextXAlignment.Center, Parent = Box, ZIndex = 5 })
+            local Btn = Create("TextButton", { Size = UDim2.new(0, 60, 0, 25), Position = UDim2.new(1, -65, 0.5, -12.5), BackgroundColor3 = Theme.Accent, Text = "Copiar", TextColor3 = Color3.fromRGB(255,255,255), Font = Enum.Font.GothamBold, TextSize = 11, Parent = Frame, ZIndex = 4 })
+            Create("UICorner", { CornerRadius = UDim.new(0, 4), Parent = Btn })
+            AddHover(Btn)
+            Btn.MouseButton1Click:Connect(function()
+                if setclipboard then
+                    setclipboard(value)
+                    WindowAPI:Notify("Copiado!", "O texto foi copiado para a área de transferência.", 3)
+                else
+                    WindowAPI:Notify("Erro", "Seu executor não suporta cópia.", 3)
+                end
+            end)
+        end
+
         function TabAPI:CreateInput(text, default, placeholder, callback, flag)
             local InputFrame = Create("Frame", { Size = UDim2.new(1, -5, 0, 35), BackgroundColor3 = Theme.Element, Parent = Page, ZIndex = 3 })
             Create("UICorner", { CornerRadius = UDim.new(0, 6), Parent = InputFrame }); AddHover(InputFrame)
@@ -228,18 +268,8 @@ function AnonmyUI:CreateWindow(config)
             Create("UICorner", { CornerRadius = UDim.new(0, 4), Parent = Box })
             local TextBox = Create("TextBox", { Size = UDim2.new(1, -10, 1, 0), Position = UDim2.new(0, 5, 0, 0), BackgroundTransparency = 1, Text = default or "", PlaceholderText = placeholder or "Digite...", TextColor3 = Theme.Accent, Font = Enum.Font.GothamBold, TextSize = 11, TextXAlignment = Enum.TextXAlignment.Center, Parent = Box, ZIndex = 5, ClearTextOnFocus = false })
             table.insert(UIReferences.Accents, TextBox)
-
-            local InputObj = {
-                Set = function(newVal, skipCallback)
-                    TextBox.Text = newVal
-                    if flag then WindowAPI.Flags[flag] = newVal end
-                    if callback and not skipCallback then callback(newVal) end
-                end
-            }
-            TextBox.FocusLost:Connect(function()
-                if flag then WindowAPI.Flags[flag] = TextBox.Text end
-                if callback then callback(TextBox.Text) end
-            end)
+            local InputObj = { Set = function(newVal, skipCallback) TextBox.Text = newVal; if flag then WindowAPI.Flags[flag] = newVal end; if callback and not skipCallback then callback(newVal) end end }
+            TextBox.FocusLost:Connect(function() if flag then WindowAPI.Flags[flag] = TextBox.Text end; if callback then callback(TextBox.Text) end end)
             if flag then WindowAPI.Elements[flag] = InputObj; WindowAPI.Flags[flag] = default or "" end
             return InputObj
         end
@@ -254,32 +284,22 @@ function AnonmyUI:CreateWindow(config)
             Create("UICorner", { CornerRadius = UDim.new(1, 0), Parent = Track })
             local Knob = Create("Frame", { Size = UDim2.new(0, 16, 0, 16), Position = UDim2.new(0, 2, 0.5, -8), BackgroundColor3 = Color3.fromRGB(255, 255, 255), Parent = Track, ZIndex = 5 })
             Create("UICorner", { CornerRadius = UDim.new(1, 0), Parent = Knob })
-            
             local function updateVisual()
                 local targetColor = state and Theme.Accent or Color3.fromRGB(50, 50, 50)
                 local targetPos = state and UDim2.new(1, -18, 0.5, -8) or UDim2.new(0, 2, 0.5, -8)
                 TweenService:Create(Track, TweenInfo.new(0.3, Enum.EasingStyle.Quint), {BackgroundColor3 = targetColor}):Play()
                 TweenService:Create(Knob, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Position = targetPos}):Play()
             end
-
             local function setState(newVal, skipCallback)
                 if state == newVal then return end
-                state = newVal
-                updateVisual()
+                state = newVal; updateVisual()
                 if flag then WindowAPI.Flags[flag] = state end
-                if callback and not skipCallback then 
-                    local ok, err = pcall(callback, state)
-                    if not ok then warn("AnonmyUI | Toggle Callback Error:", err) end
-                end
+                if callback and not skipCallback then local ok, err = pcall(callback, state); if not ok then warn("AnonmyUI | Toggle Callback Error:", err) end end
             end
-
             Track.BackgroundColor3 = state and Theme.Accent or Color3.fromRGB(50, 50, 50)
             Knob.Position = state and UDim2.new(1, -18, 0.5, -8) or UDim2.new(0, 2, 0.5, -8)
-
             local ToggleObj = { Set = setState }
             if flag then WindowAPI.Elements[flag] = ToggleObj; WindowAPI.Flags[flag] = state end
-            
-            -- Animação de Clique (Tactile)
             ToggleFrame.MouseButton1Click:Connect(function()
                 TweenService:Create(ToggleFrame, TweenInfo.new(0.1), {Size = UDim2.new(1, -10, 0, 30)}):Play()
                 task.delay(0.1, function() TweenService:Create(ToggleFrame, TweenInfo.new(0.2), {Size = origSize}):Play() end)
@@ -293,8 +313,6 @@ function AnonmyUI:CreateWindow(config)
             local Btn = Create("TextButton", { Size = origSize, BackgroundColor3 = Theme.Element, Text = text, TextColor3 = Theme.Text, Font = Enum.Font.Gotham, TextSize = 13, Parent = Page, AutoButtonColor = false, ZIndex = 3 })
             local Stroke = Create("UIStroke", { Color = Theme.Stroke, Transparency = 0, Parent = Btn })
             Create("UICorner", { CornerRadius = UDim.new(0, 6), Parent = Btn }); AddHover(Btn)
-            
-            -- Animação de Clique (Tactile)
             Btn.MouseButton1Click:Connect(function()
                 TweenService:Create(Btn, TweenInfo.new(0.1), {Size = UDim2.new(1, -10, 0, 30)}):Play()
                 task.delay(0.1, function()
@@ -317,10 +335,8 @@ function AnonmyUI:CreateWindow(config)
             Create("UICorner", { CornerRadius = UDim.new(1, 0), Parent = Fill })
             local Knob = Create("Frame", { Size = UDim2.new(0, 14, 0, 14), Position = UDim2.new((default - min) / (max - min), -4, 0.5, -7), BackgroundColor3 = Color3.fromRGB(255, 255, 255), Parent = Track, ZIndex = 6 })
             Create("UICorner", { CornerRadius = UDim.new(1, 0), Parent = Knob })
-            
             local dragging = false
             local dragTweenInfo = TweenInfo.new(0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-            
             local SliderObj = {
                 Set = function(newVal, skipCallback)
                     newVal = math.clamp(newVal, min, max)
@@ -332,7 +348,6 @@ function AnonmyUI:CreateWindow(config)
                     if callback and not skipCallback then callback(newVal) end
                 end
             }
-            
             local function update(input)
                 local rel = math.clamp((input.Position.X - Track.AbsolutePosition.X) / Track.AbsoluteSize.X, 0, 1)
                 local raw = min + (max - min) * rel
@@ -356,7 +371,6 @@ function AnonmyUI:CreateWindow(config)
             Create("UICorner", { CornerRadius = UDim.new(0, 6), Parent = ListFrame })
             CreateListLayout(ListFrame, 2); CreatePadding(ListFrame, 0, 0, 2, 2)
             local Btn = Create("TextButton", { Size = UDim2.new(1, 0, 1, 0), BackgroundTransparency = 1, Text = "", Parent = DropdownFrame, ZIndex = 5 })
-            
             local DropdownObj = {
                 Set = function(newVal, skipCallback)
                     selected = newVal
@@ -369,14 +383,12 @@ function AnonmyUI:CreateWindow(config)
                     if callback and not skipCallback then callback(selected) end
                 end
             }
-            
             local function toggleList()
                 ListFrame.Visible = not ListFrame.Visible
                 local targetSize = ListFrame.Visible and UDim2.new(1, -5, 0, 35 + (#options * 30) + 5) or UDim2.new(1, -5, 0, 35)
                 TweenService:Create(DropdownFrame, TweenInfo.new(0.3, Enum.EasingStyle.Exponential, Enum.EasingDirection.Out), {Size = targetSize}):Play()
             end
             Btn.MouseButton1Click:Connect(toggleList)
-
             for _, opt in ipairs(options) do
                 local OptBtn = Create("TextButton", { Size = UDim2.new(1, -4, 0, 28), BackgroundColor3 = Theme.Element, Text = opt, TextColor3 = Theme.Text, Font = Enum.Font.Gotham, TextSize = 12, Parent = ListFrame, ZIndex = 11 })
                 Create("UICorner", { CornerRadius = UDim.new(0, 4), Parent = OptBtn }); AddHover(OptBtn)
@@ -430,9 +442,7 @@ function AnonmyUI:CreateWindow(config)
     end
 
     local ConfigTab = WindowAPI:CreateTab("Config UI", 1000)
-    local neonEnabled = false
-    local currentRGB = {R = 0, G = 255, B = 200}
-
+    local neonEnabled = false; local currentRGB = {R = 0, G = 255, B = 200}
     local function UpdateThemeColor()
         Theme.Accent = Color3.fromRGB(currentRGB.R, currentRGB.G, currentRGB.B)
         for _, obj in ipairs(UIReferences.Accents) do
@@ -442,25 +452,15 @@ function AnonmyUI:CreateWindow(config)
         if neonEnabled then MainStroke.Color = Theme.Accent; MainStroke.Thickness = 2; MainStroke.Transparency = 0 end
     end
 
-    ConfigTab:CreateToggle("Modo Neon (Borda)", false, function(state)
-        neonEnabled = state
-        if state then MainStroke.Color = Theme.Accent; MainStroke.Thickness = 2; MainStroke.Transparency = 0
-        else MainStroke.Color = Theme.Stroke; MainStroke.Thickness = 1 end
-    end)
+    ConfigTab:CreateToggle("Modo Neon (Borda)", false, function(state) neonEnabled = state; if state then MainStroke.Color = Theme.Accent; MainStroke.Thickness = 2; MainStroke.Transparency = 0 else MainStroke.Color = Theme.Stroke; MainStroke.Thickness = 1 end end)
     ConfigTab:CreateSlider("Cor Vermelha (R)", 0, 255, 1, 0, function(val) currentRGB.R = val; UpdateThemeColor() end)
     ConfigTab:CreateSlider("Cor Verde (G)", 0, 255, 1, 200, function(val) currentRGB.G = val; UpdateThemeColor() end)
     ConfigTab:CreateSlider("Cor Azul (B)", 0, 255, 1, 200, function(val) currentRGB.B = val; UpdateThemeColor() end)
     ConfigTab:CreateSlider("Transparência da Janela", 0, 1, 0.01, 0, function(val) Main.BackgroundTransparency = val; Topbar.BackgroundTransparency = val end)
     
-    ConfigTab:CreateButton("Salvar Configuração", function() WindowAPI:SaveConfiguration() print("Config Salva!") end)
-    ConfigTab:CreateButton("Carregar Configuração", function() WindowAPI:LoadConfiguration() print("Config Carregada!") end)
-
-    ConfigTab:CreateKeybind("Abrir/Fechar Menu", Enum.KeyCode.K, false, function(state)
-        if state == true then
-            uiVisible = not uiVisible
-            toggleUI(uiVisible)
-        end
-    end)
+    ConfigTab:CreateButton("Salvar Configuração", function() WindowAPI:SaveConfiguration(); WindowAPI:Notify("Salvo!", "Suas configurações foram salvas.", 3) end)
+    ConfigTab:CreateButton("Carregar Configuração", function() WindowAPI:LoadConfiguration(); WindowAPI:Notify("Carregado!", "Suas configurações foram carregadas.", 3) end)
+    ConfigTab:CreateKeybind("Abrir/Fechar Menu", Enum.KeyCode.K, false, function(state) if state == true then uiVisible = not uiVisible; toggleUI(uiVisible) end end)
 
     toggleUI(true)
     return WindowAPI
