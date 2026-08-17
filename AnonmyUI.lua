@@ -1,4 +1,4 @@
--- AnonmyUI V14 (Lógica de Toggle Reescrita e Limpa)
+-- AnonmyUI V15 (Bug da Sombra e Efeito Buraco Negro)
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
@@ -73,6 +73,7 @@ function AnonmyUI:CreateWindow(config)
     pcall(function() ScreenGui.Parent = CoreGui end)
     if not ScreenGui.Parent then ScreenGui.Parent = Players.LocalPlayer:WaitForChild("PlayerGui") end
 
+    -- Sombra e Janela agora usam AnchorPoint no centro para o efeito Buraco Negro
     local Shadow = Create("ImageLabel", {
         Name = "Shadow", AnchorPoint = Vector2.new(0.5, 0.5), Size = UDim2.new(0, 530, 0, 380),
         Position = UDim2.new(0.5, 0, 0.5, 0), BackgroundTransparency = 1, Image = "rbxassetid://6014261993",
@@ -80,7 +81,15 @@ function AnonmyUI:CreateWindow(config)
         SliceCenter = Rect.new(30, 30, 30, 30), Parent = ScreenGui, ZIndex = 0
     })
 
-    local Main = Create("Frame", { Size = UDim2.new(0, 500, 0, 350), Position = UDim2.new(0.5, -250, 0.5, -175), BackgroundColor3 = Theme.Background, BorderSizePixel = 0, Parent = ScreenGui, ClipsDescendants = true })
+    local Main = Create("Frame", { 
+        Size = UDim2.new(0, 500, 0, 350), 
+        Position = UDim2.new(0.5, 0, 0.5, 0), 
+        AnchorPoint = Vector2.new(0.5, 0.5),
+        BackgroundColor3 = Theme.Background, 
+        BorderSizePixel = 0, 
+        Parent = ScreenGui, 
+        ClipsDescendants = true 
+    })
     Create("UICorner", { CornerRadius = UDim.new(0, 10), Parent = Main })
     local MainStroke = Create("UIStroke", { Color = Theme.Stroke, Thickness = 1, Parent = Main })
     table.insert(UIReferences.Strokes, MainStroke)
@@ -92,12 +101,13 @@ function AnonmyUI:CreateWindow(config)
     local Title = Create("TextLabel", { Size = UDim2.new(1, -20, 1, 0), Position = UDim2.new(0, 15, 0, 0), BackgroundTransparency = 1, Text = config.Name or "AnonmyUI", TextColor3 = Theme.Accent, Font = Enum.Font.GothamBold, TextSize = 15, TextXAlignment = Enum.TextXAlignment.Left, Parent = Topbar })
     table.insert(UIReferences.Accents, Title)
 
+    -- Arraste atualizado para o AnchorPoint Central
     local dragging, dragStart, startPos
     local function updateDrag(input)
         local delta = input.Position - dragStart
         local newPos = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
         Main.Position = newPos
-        Shadow.Position = UDim2.new(newPos.X.Scale, newPos.X.Offset + 250, newPos.Y.Scale, newPos.Y.Offset + 175)
+        Shadow.Position = newPos -- Sombra segue exatamente a janela
     end
     Topbar.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
@@ -109,9 +119,33 @@ function AnonmyUI:CreateWindow(config)
         if input.UserInputType == Enum.UserInputType.MouseMovement and dragging then updateDrag(input) end
     end)
 
-    Main.Size = UDim2.new(0, 500, 0, 0); Shadow.ImageTransparency = 1; Main.Visible = true; Shadow.Visible = true
-    TweenService:Create(Main, TweenInfo.new(0.6, Enum.EasingStyle.Exponential, Enum.EasingDirection.Out), {Size = UDim2.new(0, 500, 0, 350)}):Play()
-    TweenService:Create(Shadow, TweenInfo.new(0.6, Enum.EasingStyle.Exponential, Enum.EasingDirection.Out), {ImageTransparency = 0.5}):Play()
+    -- Função de Animação (Efeito Buraco Negro)
+    local isAnimating = false
+    local uiVisible = true
+
+    local function toggleUI(show)
+        if isAnimating then return end
+        isAnimating = true
+        
+        if show then
+            Main.Visible = true; Shadow.Visible = true
+            Main.Size = UDim2.new(0, 0, 0, 0)
+            Main.BackgroundTransparency = 1
+            Shadow.ImageTransparency = 1
+            
+            local tweenInfo = TweenInfo.new(0.5, Enum.EasingStyle.Exponential, Enum.EasingDirection.Out)
+            TweenService:Create(Main, tweenInfo, {Size = UDim2.new(0, 500, 0, 350), BackgroundTransparency = 0}):Play()
+            TweenService:Create(Shadow, tweenInfo, {ImageTransparency = 0.5}):Play()
+            task.delay(tweenInfo.Time, function() isAnimating = false end)
+        else
+            local tweenInfo = TweenInfo.new(0.4, Enum.EasingStyle.Exponential, Enum.EasingDirection.In)
+            TweenService:Create(Main, tweenInfo, {Size = UDim2.new(0, 0, 0, 0), BackgroundTransparency = 1}):Play()
+            TweenService:Create(Shadow, tweenInfo, {ImageTransparency = 1}):Play()
+            task.delay(tweenInfo.Time, function()
+                Main.Visible = false; Shadow.Visible = false; isAnimating = false
+            end)
+        end
+    end
 
     local TabContainer = Create("ScrollingFrame", { Size = UDim2.new(0, 140, 1, -50), Position = UDim2.new(0, 10, 0, 45), BackgroundColor3 = Theme.Topbar, BorderSizePixel = 0, Parent = Main, ScrollBarThickness = 0, AutomaticCanvasSize = Enum.AutomaticSize.Y, ZIndex = 2 })
     Create("UICorner", { CornerRadius = UDim.new(0, 8), Parent = TabContainer })
@@ -200,9 +234,6 @@ function AnonmyUI:CreateWindow(config)
             return InputObj
         end
 
-        -- ==========================================
-        -- LÓGICA DO TOGGLE TOTALMENTE REESCRITA E SEGURA
-        -- ==========================================
         function TabAPI:CreateToggle(text, default, callback, flag)
             local state = default or false
             local ToggleFrame = Create("TextButton", { Size = UDim2.new(1, -5, 0, 35), BackgroundColor3 = Theme.Element, Text = "", Parent = Page, AutoButtonColor = false, ZIndex = 3 })
@@ -231,17 +262,13 @@ function AnonmyUI:CreateWindow(config)
                 end
             end
 
-            -- Inicializa o visual corretamente
             Track.BackgroundColor3 = state and Theme.Accent or Color3.fromRGB(50, 50, 50)
             Knob.Position = state and UDim2.new(1, -18, 0.5, -8) or UDim2.new(0, 2, 0.5, -8)
 
             local ToggleObj = { Set = setState }
             if flag then WindowAPI.Elements[flag] = ToggleObj; WindowAPI.Flags[flag] = state end
             
-            ToggleFrame.MouseButton1Click:Connect(function()
-                setState(not state)
-            end)
-            
+            ToggleFrame.MouseButton1Click:Connect(function() setState(not state) end)
             return ToggleObj
         end
 
@@ -405,11 +432,16 @@ function AnonmyUI:CreateWindow(config)
     ConfigTab:CreateButton("Salvar Configuração", function() WindowAPI:SaveConfiguration() print("Config Salva!") end)
     ConfigTab:CreateButton("Carregar Configuração", function() WindowAPI:LoadConfiguration() print("Config Carregada!") end)
 
+    -- Keybind usando a nova função de animação Buraco Negro
     ConfigTab:CreateKeybind("Abrir/Fechar Menu", Enum.KeyCode.K, false, function(state)
-        if state == true then Main.Visible = not Main.Visible end
+        if state == true then
+            uiVisible = not uiVisible
+            toggleUI(uiVisible)
+        end
     end)
 
-    WindowAPI:LoadConfiguration()
+    -- Inicializa com a animação de Buraco Negro
+    toggleUI(true)
 
     return WindowAPI
 end
